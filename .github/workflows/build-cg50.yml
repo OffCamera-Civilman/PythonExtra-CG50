@@ -30,6 +30,46 @@ jobs:
             curl git python3 python3-pil build-essential cmake pkg-config \
             libusb-1.0-0-dev libsdl2-dev libpng-dev libncurses-dev
 
+      - name: Prepare custom G3A icon
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # The logo was added to main after this compatibility branch was
+          # created, so import that exact repository asset for the build.
+          git fetch origin main --no-tags
+          mkdir -p logo
+          git show FETCH_HEAD:logo/logo.jpg > logo/logo.jpg
+
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image, ImageOps
+
+          source = Path("logo/logo.jpg")
+          out_dir = Path("ports/fxcg50")
+          size = (92, 64)
+
+          image = Image.open(source).convert("RGB")
+          image = ImageOps.contain(image, size, Image.Resampling.LANCZOS)
+
+          # Preserve the full logo instead of cropping it. Use the image's
+          # corner color as the letterbox background so padding blends in.
+          background = Image.new("RGB", size, image.getpixel((0, 0)))
+          x = (size[0] - image.width) // 2
+          y = (size[1] - image.height) // 2
+          background.paste(image, (x, y))
+
+          for name in (
+              "icon-uns.png",
+              "icon-sel.png",
+              "icon-uns-dev.png",
+              "icon-sel-dev.png",
+          ):
+              background.save(out_dir / name, "PNG")
+
+          print(f"Prepared G3A icon from {source}: {size[0]}x{size[1]}")
+          PY
+
       - name: Install GiteaPC
         shell: bash
         run: |
