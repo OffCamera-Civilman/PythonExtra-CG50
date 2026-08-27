@@ -84,13 +84,13 @@ jobs:
         run: |
           set -euo pipefail
           export PATH="$HOME/.local/bin:$PATH"
-          giteapc install \
+          printf '\n' | giteapc install \
             Lephenixnoir/fxsdk:noudisks2 \
             Lephenixnoir/sh-elf-binutils \
             Lephenixnoir/sh-elf-gcc
-          giteapc install Lephenixnoir/OpenLibm Vhex-Kernel-Core/fxlibc
-          giteapc install Lephenixnoir/sh-elf-gcc
-          giteapc install Lephenixnoir/gint Lephenixnoir/JustUI
+          printf '\n' | giteapc install Lephenixnoir/OpenLibm Vhex-Kernel-Core/fxlibc
+          printf '\n' | giteapc install Lephenixnoir/sh-elf-gcc
+          printf '\n' | giteapc install Lephenixnoir/gint Lephenixnoir/JustUI
 
       - name: Record dependency versions
         shell: bash
