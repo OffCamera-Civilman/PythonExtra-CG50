@@ -38,12 +38,17 @@ SRC_QSTR += \
     ports/sh/objgintfont.c \
     ports/sh/pyexec.c \
 
-ifeq ($(shell [[ x"$$(git describe)" == x"$$(git describe main)" ]] \
+# The upstream project normally has release tags available to git describe.
+# Fork/import workflows may intentionally omit upstream Git history, so always
+# provide a usable build identifier instead of allowing git describe to fail.
+GIT_DESCRIBE := $(shell git describe --tags --always 2>/dev/null || git rev-parse --short HEAD)
+
+ifeq ($(shell [[ x"$$(git rev-parse HEAD)" == x"$$(git rev-parse main 2>/dev/null)" ]] \
               && [[ -z "$$(git status -uno --porcelain)" ]] \
               && echo y),y)
     BUILDTYPE := RELEASE
     BUILDTYPE_STR := $(shell echo -e "\x1b[32;1mRelease build\x1b[0m")
-    PE_BUILD := $(shell git describe)
+    PE_BUILD := $(GIT_DESCRIBE)
 else
     BUILDTYPE := DEV
     BUILDTYPE_STR := $(shell echo -e "\x1b[33;1mDevelopment build\x1b[0m")
@@ -98,7 +103,7 @@ $(BUILD)/sh_assets/%.o: % $(SH_METADATA)
 	$(Q)mkdir -p $(dir $@)
 	$(Q)fxconv --toolchain=$(CROSS_COMPILE:%-=%) $(SH_CONVFLAGS) $< -o $@
 
-ARCHIVE := PythonExtra-$(shell git describe).zip
+ARCHIVE := PythonExtra-$(GIT_DESCRIBE).zip
 
 # Weird rules calling back to fxcg50 and fx9860g3, both of which include this
 release:
