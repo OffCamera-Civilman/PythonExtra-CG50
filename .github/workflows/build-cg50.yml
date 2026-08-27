@@ -1,0 +1,83 @@
+name: Build fx-CG50
+
+on:
+  push:
+    branches:
+      - cg50-new-display
+    paths:
+      - "ports/**"
+      - "py/**"
+      - "extmod/**"
+      - "shared/**"
+      - ".github/workflows/build-cg50.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install host dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            curl git python3 python3-pil build-essential cmake pkg-config \
+            libusb-1.0-0-dev libsdl2-dev libpng-dev libncurses-dev
+
+      - name: Install GiteaPC
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl "https://git.planet-casio.com/Lephenixnoir/GiteaPC/raw/branch/master/install.sh" \
+            -o /tmp/giteapc-install.sh
+          printf '\n' | bash /tmp/giteapc-install.sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install fxSDK toolchain and libraries
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.local/bin:$PATH"
+          giteapc install \
+            Lephenixnoir/fxsdk:noudisks2 \
+            Lephenixnoir/sh-elf-binutils \
+            Lephenixnoir/sh-elf-gcc
+          giteapc install Lephenixnoir/OpenLibm Vhex-Kernel-Core/fxlibc
+          giteapc install Lephenixnoir/sh-elf-gcc
+          giteapc install Lephenixnoir/gint Lephenixnoir/JustUI
+
+      - name: Record dependency versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.local/bin:$PATH"
+          mkdir -p build-info
+          {
+            echo "PythonExtra: $(git rev-parse HEAD)"
+            echo "Upstream PythonExtra: $(cat UPSTREAM_COMMIT 2>/dev/null || echo unknown)"
+            echo "gint: $(git -C "$(giteapc show -p Lephenixnoir/gint)" rev-parse HEAD)"
+            echo "fxSDK: $(git -C "$(giteapc show -p Lephenixnoir/fxsdk)" rev-parse HEAD)"
+            echo "JustUI: $(git -C "$(giteapc show -p Lephenixnoir/JustUI)" rev-parse HEAD)"
+          } | tee build-info/versions.txt
+
+      - name: Build PythonExtra for fx-CG50
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.local/bin:$PATH"
+          make -C ports/fxcg50 -j2
+
+      - name: Upload G3A
+        uses: actions/upload-artifact@v4
+        with:
+          name: PythonExtra-CG50
+          path: |
+            ports/fxcg50/PythonExtra.g3a
+            build-info/versions.txt
+          if-no-files-found: error
