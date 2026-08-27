@@ -1,0 +1,37 @@
+img_*.png:
+  type: bopti-image
+  name_regex: (.*)\.png \1
+
+font_*.png:
+  name_regex: (.*)\.png \1
+  type: font
+  charset: print
+  grid.padding: 1
+  grid.border: 0
+
+font_5x7.png:
+  charset: print
+  grid.size: 5x7
+  grid.padding: 1
+  grid.border: 0
+
+font_4x4.png:
+  charset: print
+  grid.size: 4x4
+  grid.padding: 1
+  grid.border: 0
+  proportional: true
+
+font_4x6.png:
+  charset: print
+  grid.size: 5x6
+  grid.padding: 1
+  grid.border: 0
+  proportional: true
+
+font_3x5.png:
+  charset: ascii
+  height: 5
+  grid.size: 5x6
+  grid.padding: 1
+  proportional: true
