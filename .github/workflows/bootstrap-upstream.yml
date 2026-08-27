@@ -1,5 +1,6 @@
 name: Bootstrap upstream PythonExtra
 
+# One-time bootstrap: import the Planet Casio upstream source into main.
 on:
   push:
     paths:
