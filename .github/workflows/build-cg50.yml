@@ -90,7 +90,24 @@ jobs:
             Lephenixnoir/sh-elf-gcc
           printf '\n' | giteapc install Lephenixnoir/OpenLibm Vhex-Kernel-Core/fxlibc
           printf '\n' | giteapc install Lephenixnoir/sh-elf-gcc
-          printf '\n' | giteapc install Lephenixnoir/gint Lephenixnoir/JustUI
+          printf '\n' | giteapc install Lephenixnoir/gint
+
+          # JustUI currently references font_t.line_distance, which was
+          # removed from the current gint C font structure. Fetch JustUI
+          # through GiteaPC, then patch the two affected references to the
+          # current line_height member before rebuilding/installing it.
+          set +e
+          printf '\n' | giteapc install Lephenixnoir/JustUI
+          justui_rc=$?
+          set -e
+
+          JUSTUI_DIR="$HOME/.local/share/giteapc/Lephenixnoir/JustUI"
+          if [ "$justui_rc" -ne 0 ]; then
+            test -f "$JUSTUI_DIR/src/jlabel.c"
+            sed -i 's/->line_distance/->line_height/g' "$JUSTUI_DIR/src/jlabel.c"
+            gmake -f "$JUSTUI_DIR/giteapc.make" build
+            gmake -f "$JUSTUI_DIR/giteapc.make" install
+          fi
 
       - name: Record dependency versions
         shell: bash
