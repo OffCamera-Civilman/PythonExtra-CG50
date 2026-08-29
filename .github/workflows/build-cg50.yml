@@ -105,8 +105,8 @@ jobs:
           if [ "$justui_rc" -ne 0 ]; then
             test -f "$JUSTUI_DIR/src/jlabel.c"
             sed -i 's/->line_distance/->line_height/g' "$JUSTUI_DIR/src/jlabel.c"
-            gmake -f "$JUSTUI_DIR/giteapc.make" build
-            gmake -f "$JUSTUI_DIR/giteapc.make" install
+            gmake -C "$JUSTUI_DIR" -f giteapc.make build
+            gmake -C "$JUSTUI_DIR" -f giteapc.make install
           fi
 
       - name: Record dependency versions
