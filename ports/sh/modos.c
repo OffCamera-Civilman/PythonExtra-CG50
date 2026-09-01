@@ -125,7 +125,7 @@ static const mp_rom_map_elem_t pe_os_globals_table[] = {
 };
 static MP_DEFINE_CONST_DICT(pe_os_globals, pe_os_globals_table);
 
-static const mp_obj_module_t pe_module_os = {
+const mp_obj_module_t pe_module_os = {
     .base = { &mp_type_module },
     .globals = (mp_obj_dict_t *)&pe_os_globals,
 };
