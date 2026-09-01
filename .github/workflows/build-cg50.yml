@@ -197,6 +197,35 @@ jobs:
           export PATH="$HOME/.local/bin:$PATH"
           make -C ports/fxcg50 -j2
 
+      - name: Smoke-check G3A and REPL surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          g3a = Path("ports/fxcg50/PythonExtra.g3a")
+          data = g3a.read_bytes()
+
+          if len(data) < 100_000:
+              raise SystemExit(f"G3A is unexpectedly small: {len(data)} bytes")
+
+          # Static smoke checks cannot replace calculator testing, but they do
+          # catch stripped or mispackaged builds before publishing an artifact.
+          required = {
+              b"PythonExtra": "application identity",
+              b"*** SHELL INITIALIZED ***": "interactive REPL",
+              b"dtriangle": "native triangle binding",
+          }
+          missing = [label for marker, label in required.items() if marker not in data]
+          if missing:
+              raise SystemExit("Missing G3A surfaces: " + ", ".join(missing))
+
+          print(f"Validated {g3a}: {len(data)} bytes")
+          for label in required.values():
+              print(f"  present: {label}")
+          PY
+
       - name: Upload G3A
         uses: actions/upload-artifact@v4
         with:
