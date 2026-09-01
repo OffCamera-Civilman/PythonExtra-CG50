@@ -83,6 +83,7 @@ extern const struct _mp_print_t mp_debug_print;
 #define MICROPY_PY_CMATH                  (1)
 #define MICROPY_PY_GC                     (1)
 #define MICROPY_PY_IO                     (1)
+#define MICROPY_PY_JSON                   (1)
 #define MICROPY_PY_STRUCT                 (1)
 #define MICROPY_PY_RANDOM                 (1)
 #define MICROPY_PY_RANDOM_EXTRA_FUNCS     (1)
