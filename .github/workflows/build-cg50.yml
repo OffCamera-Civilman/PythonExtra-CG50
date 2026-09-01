@@ -202,6 +202,32 @@ jobs:
             --regexp-ignore-case --grep='display\|r61524\|cg50\|fx-cg' \
             > build-info/gint-display-history.txt
 
+          # Export the exact upstream newer-display changes for review before
+          # changing the dependency revision used by the known-good build.
+          for commit in \
+            27000967d72d16f92ab54e7a10c7505ef85e2e85 \
+            31f2506e3b94cd8332b97a519471017e52e374d6 \
+            982055c999bdd0d73d23dad7c75ad5bd87b22922
+          do
+            git -C "$GINT_DIR" show --format=fuller --stat --patch "$commit" \
+              > "$GITHUB_WORKSPACE/build-info/gint-$commit.patch"
+          done
+
+          {
+            for older in \
+              27000967d72d16f92ab54e7a10c7505ef85e2e85 \
+              31f2506e3b94cd8332b97a519471017e52e374d6
+            do
+              if git -C "$GINT_DIR" merge-base --is-ancestor \
+                "$older" 982055c999bdd0d73d23dad7c75ad5bd87b22922
+              then
+                echo "$older is an ancestor of 982055c999bdd0d73d23dad7c75ad5bd87b22922"
+              else
+                echo "$older is NOT an ancestor of 982055c999bdd0d73d23dad7c75ad5bd87b22922"
+              fi
+            done
+          } > build-info/gint-compat-ancestry.txt
+
       - name: Build PythonExtra for fx-CG50
         shell: bash
         run: |
