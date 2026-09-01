@@ -70,7 +70,19 @@ jobs:
           print(f"Prepared G3A icon from {source}: {size[0]}x{size[1]}")
           PY
 
+      - name: Restore fxSDK toolchain cache
+        id: cache-fxsdk
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.local
+          key: fxsdk-${{ runner.os }}-badbd0fd-09e2cf5f-ccb5feae-v1
+
+      - name: Add local tools to PATH
+        shell: bash
+        run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
       - name: Install GiteaPC
+        if: steps.cache-fxsdk.outputs.cache-hit != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -80,6 +92,7 @@ jobs:
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Install fxSDK toolchain and libraries
+        if: steps.cache-fxsdk.outputs.cache-hit != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -108,6 +121,13 @@ jobs:
             gmake -C "$JUSTUI_DIR" -f giteapc.make build
             gmake -C "$JUSTUI_DIR" -f giteapc.make install
           fi
+
+      - name: Save fxSDK toolchain cache
+        if: steps.cache-fxsdk.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.local
+          key: fxsdk-${{ runner.os }}-badbd0fd-09e2cf5f-ccb5feae-v1
 
       - name: Record dependency versions
         shell: bash

@@ -41,11 +41,13 @@
 #include "debug.h"
 #include "resources.h"
 
+#ifdef HH2_NAME
 HH2_NAME("PythonExtra " PE_BUILD)
 HH2_DESCRIPTION("Python application based on MicroPython "
                 MICROPY_VERSION_STRING_BASE " and gint.")
 HH2_AUTHOR("Lephe, SlyVTT & Planete Casio contributors")
 HH2_VERSION(PE_BUILD)
+#endif
 
 //=== Application globals ===//
 
@@ -371,20 +373,27 @@ static char *pe_handle_event(jevent e, bool shell_bound, bool *exit)
     if(key == KEY_TAN)
         pe_debug_kmalloc("tan");
 
-    if(!shell_bound &&
-        (key == KEY_F1 || key == KEY_PREVTAB || key == KEY_EQUALS))
+    bool show_files = key == KEY_F1 || key == KEY_EQUALS;
+    bool show_shell = key == KEY_F2 || key == KEY_X;
+#if GINT_HW_CP
+    show_files = show_files || key == KEY_PREVTAB;
+    show_shell = show_shell || key == KEY_NEXTTAB;
+#endif
+    if(!shell_bound && show_files)
         pe_show_files();
-    if(!shell_bound && (key == KEY_F2 || key == KEY_NEXTTAB || key == KEY_X))
+    if(!shell_bound && show_shell)
         pe_show_shell();
     if(!shell_bound && key == KEY_VARS && e.key.shift) {
         pe_debug_browse_meminfo();
         PE.scene->widget.update = true;
     }
 
+#if GINT_HW_CP
     /* If return-to-menu is not enabled in the scene (default on machines on
-       which there *is no* return-to-menu, leave on HOME */
-    if(!shell_bound && exit && (e.key.key == KEY_HOME))
+       which there *is no* return-to-menu, leave on HOME. */
+    if(!shell_bound && exit && e.key.key == KEY_HOME)
         *exit = true;
+#endif
 
     return NULL;
 }
@@ -491,14 +500,7 @@ int main(int argc, char **argv)
         abort();
     gc_init(unique_area, unique_area + 300000);
 #else
-    /* On Math+, we have a loooot of free space in the _ld1 arena. */
-    if(gint[HWCALC] == HWCALC_FXCG100) {
-        size_t gc_area_size;
-        void *gc_area = kmalloc_max(&gc_area_size, "_ld1");
-        gc_init(gc_area, gc_area + gc_area_size);
-    }
-    else {
-        /* Get everything from the OS stack (~ 350 kB) */
+    /* Get everything from the fx-CG OS stack (~ 350 kB). */
         size_t gc_area_size;
         void *gc_area = kmalloc_max(&gc_area_size, "_ostk");
         gc_init(gc_area, gc_area + gc_area_size);
@@ -513,7 +515,6 @@ int main(int argc, char **argv)
            - The OS' extra VRAM
            - Memory past the 2 MB boundary on tested OSes */
         // gc_add(start, end)...
-    }
 #endif
 
     mp_init();
