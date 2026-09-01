@@ -190,6 +190,18 @@ jobs:
             echo "JustUI: $(git -C "$(giteapc show -p Lephenixnoir/JustUI)" rev-parse HEAD)"
           } | tee build-info/versions.txt
 
+      - name: Capture pinned gint display sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.local/bin:$PATH"
+          GINT_DIR="$(giteapc show -p Lephenixnoir/gint)"
+          git -C "$GINT_DIR" archive --format=tar.gz \
+            --output="$GITHUB_WORKSPACE/build-info/gint-source.tar.gz" HEAD
+          git -C "$GINT_DIR" log --all --date=iso --pretty=format:'%H %ad %s' \
+            --regexp-ignore-case --grep='display\|r61524\|cg50\|fx-cg' \
+            > build-info/gint-display-history.txt
+
       - name: Build PythonExtra for fx-CG50
         shell: bash
         run: |
@@ -236,5 +248,5 @@ jobs:
           name: PythonExtra-CG50
           path: |
             ports/fxcg50/PythonExtra.g3a
-            build-info/versions.txt
+            build-info/
           if-no-files-found: error
