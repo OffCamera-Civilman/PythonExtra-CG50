@@ -130,8 +130,9 @@ static mp_obj_t modctypes_available(void)
 static void modctypes_require_arity(
     char const *name, size_t actual, size_t expected)
 {
+    (void)name;
     if(actual != expected)
-        mp_raise_TypeError("%s expects %d argument(s)", name, expected);
+        mp_raise_TypeError("wrong number of native-call arguments");
 }
 
 static mp_obj_t modctypes_call(size_t n_args, mp_obj_t const *args)
