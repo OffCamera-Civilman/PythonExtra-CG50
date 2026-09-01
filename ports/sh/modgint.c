@@ -65,6 +65,7 @@ static qstr const key_event_fields[] = {
 
 static mp_obj_t mk_key_event(key_event_t ev)
 {
+#if GINT_HW_CP
     if(ev.type == KEYEV_TOUCH_DOWN || ev.type == KEYEV_TOUCH_DRAG ||
        ev.type == KEYEV_TOUCH_UP) {
         mp_obj_t items[] = {
@@ -79,7 +80,9 @@ static mp_obj_t mk_key_event(key_event_t ev)
         };
         return mp_obj_new_attrtuple(key_event_fields, 8, items);
     }
-    else {
+    else
+#endif
+    {
         mp_obj_t items[] = {
             mp_obj_new_int(ev.time),
             mp_obj_new_bool(ev.mod),
@@ -681,22 +684,6 @@ static const mp_rom_map_elem_t modgint_module_globals_table[] = {
     INT(KEY_EQUALS),
     INT(KEY_CLEAR),
 
-    /* Key codes for the fx-CG 100 / Graph Math+ */
-    INT(KEY_ON),
-    INT(KEY_HOME),
-    INT(KEY_PREVTAB),
-    INT(KEY_NEXTTAB),
-    INT(KEY_PAGEUP),
-    INT(KEY_PAGEDOWN),
-    INT(KEY_SETTINGS),
-    INT(KEY_BACK),
-    INT(KEY_OK),
-    INT(KEY_CATALOG),
-    INT(KEY_TOOLS),
-    INT(KEY_FORMAT),
-    INT(KEY_SQRT),
-    INT(KEY_EXPFUN),
-
     /* Key aliases (deprecated--no more will be added) */
     INT(KEY_X2),
     INT(KEY_CARET),
@@ -714,9 +701,11 @@ static const mp_rom_map_elem_t modgint_module_globals_table[] = {
     INT(KEYEV_DOWN),
     INT(KEYEV_UP),
     INT(KEYEV_HOLD),
+#if GINT_HW_CP
     INT(KEYEV_TOUCH_DOWN),
     INT(KEYEV_TOUCH_DRAG),
     INT(KEYEV_TOUCH_UP),
+#endif
 
     INT(GETKEY_MOD_SHIFT),
     INT(GETKEY_MOD_ALPHA),
