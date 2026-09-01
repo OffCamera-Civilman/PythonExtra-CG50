@@ -23,7 +23,9 @@
 #include <justui/jscene.h>
 #include <justui/jlabel.h>
 #include <justui/jfkeys.h>
+#if GINT_HW_CP
 #include <justui/jbutton.h>
+#endif
 #include <justui/jfileselect.h>
 #include <justui/jpainted.h>
 
@@ -60,7 +62,9 @@ struct pe_globals {
     jlabel *title;
     bool show_title_in_shell;
     /* Bottom buttons (only on fx-CP). */
+#if GINT_HW_CP
     jbutton *button_files, *button_shell, *button_exit;
+#endif
 };
 
 // TODO: Put pe_globals in a header for use by the loop hook in mpconfigport.h
@@ -345,6 +349,7 @@ static char *pe_handle_event(jevent e, bool shell_bound, bool *exit)
     if(!shell_bound && e.type == JFILESELECT_LOADED)
         pe_update_title();
 
+#if GINT_HW_CP
     if(!shell_bound && e.type == JBUTTON_TRIGGERED &&
        e.source == PE.button_files)
         pe_show_files();
@@ -353,6 +358,7 @@ static char *pe_handle_event(jevent e, bool shell_bound, bool *exit)
         pe_show_shell();
     if(exit && e.type == JBUTTON_TRIGGERED && e.source == PE.button_exit)
         *exit = true;
+#endif
 
     if(e.type != JWIDGET_KEY || e.key.type == KEYEV_UP)
         return NULL;
