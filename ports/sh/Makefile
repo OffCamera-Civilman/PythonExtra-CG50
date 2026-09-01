@@ -20,6 +20,7 @@ SRC_C = \
     ports/sh/modctypes.c \
     ports/sh/modgint.c \
     ports/sh/modnumpy.c \
+    ports/sh/modos.c \
     ports/sh/mphalport.c \
     ports/sh/objgintimage.c \
     ports/sh/objgintfont.c \
@@ -38,6 +39,7 @@ SRC_QSTR += \
     ports/sh/modctypes.c \
     ports/sh/modgint.c \
     ports/sh/modnumpy.c \
+    ports/sh/modos.c \
     ports/sh/objgintimage.c \
     ports/sh/objgintfont.c \
     ports/sh/pyexec.c \
