@@ -349,6 +349,68 @@ static mp_obj_t modgint_dline(size_t n, mp_obj_t const *args)
     return mp_const_none;
 }
 
+/* Filled triangle rasterizer for game/3D workloads.
+   Vertices are sorted by Y and scanlines are interpolated with 16.16 fixed
+   point arithmetic, keeping the Python-facing loop entirely in C. */
+static void modgint_swap_vertex(int *x1, int *y1, int *x2, int *y2)
+{
+    int x = *x1, y = *y1;
+    *x1 = *x2; *y1 = *y2;
+    *x2 = x;   *y2 = y;
+}
+
+static mp_obj_t modgint_dtriangle(size_t n, mp_obj_t const *args)
+{
+    int x0 = mp_obj_get_int(args[0]);
+    int y0 = mp_obj_get_int(args[1]);
+    int x1 = mp_obj_get_int(args[2]);
+    int y1 = mp_obj_get_int(args[3]);
+    int x2 = mp_obj_get_int(args[4]);
+    int y2 = mp_obj_get_int(args[5]);
+    int color = mp_obj_get_int(args[6]);
+
+    if(y0 > y1) modgint_swap_vertex(&x0, &y0, &x1, &y1);
+    if(y1 > y2) modgint_swap_vertex(&x1, &y1, &x2, &y2);
+    if(y0 > y1) modgint_swap_vertex(&x0, &y0, &x1, &y1);
+
+    if(y0 == y2) {
+        int xmin = x0, xmax = x0;
+        if(x1 < xmin) xmin = x1;
+        if(x2 < xmin) xmin = x2;
+        if(x1 > xmax) xmax = x1;
+        if(x2 > xmax) xmax = x2;
+        dline(xmin, y0, xmax, y0, color);
+        return mp_const_none;
+    }
+
+    for(int y = y0; y <= y2; y++) {
+        int64_t xa = ((int64_t)x0 << 16)
+            + ((int64_t)(x2 - x0) * (y - y0) << 16) / (y2 - y0);
+        int64_t xb;
+
+        if(y < y1 && y1 != y0) {
+            xb = ((int64_t)x0 << 16)
+                + ((int64_t)(x1 - x0) * (y - y0) << 16) / (y1 - y0);
+        }
+        else if(y2 != y1) {
+            xb = ((int64_t)x1 << 16)
+                + ((int64_t)(x2 - x1) * (y - y1) << 16) / (y2 - y1);
+        }
+        else {
+            xb = (int64_t)x1 << 16;
+        }
+
+        int a = (int)(xa >> 16);
+        int b = (int)(xb >> 16);
+        if(a > b) {
+            int t = a; a = b; b = t;
+        }
+        dline(a, y, b, y, color);
+    }
+
+    return mp_const_none;
+}
+
 static mp_obj_t modgint_dhline(mp_obj_t arg1, mp_obj_t arg2)
 {
     mp_int_t y = mp_obj_get_int(arg1);
@@ -581,6 +643,7 @@ FUN_BETWEEN(drect_border, 7, 7);
 FUN_3(dpixel);
 FUN_2(dgetpixel);
 FUN_BETWEEN(dline, 5, 5);
+FUN_BETWEEN(dtriangle, 7, 7);
 FUN_2(dhline);
 FUN_2(dvline);
 FUN_BETWEEN(dcircle, 5, 5);
@@ -777,6 +840,7 @@ static const mp_rom_map_elem_t modgint_module_globals_table[] = {
     OBJ(dpixel),
     OBJ(dgetpixel),
     OBJ(dline),
+    OBJ(dtriangle),
     OBJ(dhline),
     OBJ(dvline),
     OBJ(dcircle),
