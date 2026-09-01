@@ -97,13 +97,34 @@ jobs:
         run: |
           set -euo pipefail
           export PATH="$HOME/.local/bin:$PATH"
-          printf '\n' | giteapc install \
+
+          # GNU mirrors occasionally return a tiny HTML error page while
+          # GiteaPC expects the GCC tarball. Retry after removing the corrupt
+          # archive and partial extraction instead of preserving a bad file.
+          install_with_retry() {
+            local attempt
+            for attempt in 1 2 3; do
+              if printf '\n' | giteapc install "$@"; then
+                return 0
+              fi
+
+              echo "GiteaPC attempt $attempt failed; cleaning partial GCC download"
+              rm -f "$HOME/.local/share/giteapc/Lephenixnoir/sh-elf-gcc/gcc-14.1.0.tar.xz"
+              rm -rf "$HOME/.local/share/giteapc/Lephenixnoir/sh-elf-gcc/gcc-14.1.0"
+              if [ "$attempt" -lt 3 ]; then
+                sleep $((attempt * 10))
+              fi
+            done
+            return 1
+          }
+
+          install_with_retry \
             Lephenixnoir/fxsdk:noudisks2 \
             Lephenixnoir/sh-elf-binutils \
             Lephenixnoir/sh-elf-gcc
-          printf '\n' | giteapc install Lephenixnoir/OpenLibm Vhex-Kernel-Core/fxlibc
-          printf '\n' | giteapc install Lephenixnoir/sh-elf-gcc
-          printf '\n' | giteapc install Lephenixnoir/gint
+          install_with_retry Lephenixnoir/OpenLibm Vhex-Kernel-Core/fxlibc
+          install_with_retry Lephenixnoir/sh-elf-gcc
+          install_with_retry Lephenixnoir/gint
 
           # JustUI currently references font_t.line_distance, which was
           # removed from the current gint C font structure. Fetch JustUI
