@@ -75,7 +75,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/.local
-          key: fxsdk-${{ runner.os }}-badbd0fd-09e2cf5f-ccb5feae-v1
+          key: fxsdk-${{ runner.os }}-982055c9-09e2cf5f-ccb5feae-v1
 
       - name: Add local tools to PATH
         shell: bash
@@ -152,6 +152,17 @@ jobs:
           install_with_retry Lephenixnoir/sh-elf-gcc
           install_with_retry Lephenixnoir/gint
 
+          # Pin the verified upstream compatibility line. This includes the
+          # 2025/2026 display-controller command path while retaining the
+          # traditional R61524 path used by older fx-CG50 calculators.
+          GINT_COMMIT=982055c999bdd0d73d23dad7c75ad5bd87b22922
+          GINT_DIR="$(giteapc show -p Lephenixnoir/gint)"
+          git -C "$GINT_DIR" checkout --detach "$GINT_COMMIT"
+          gmake -C "$GINT_DIR" -f giteapc.make configure
+          gmake -C "$GINT_DIR" -f giteapc.make build
+          gmake -C "$GINT_DIR" -f giteapc.make install
+          test "$(git -C "$GINT_DIR" rev-parse HEAD)" = "$GINT_COMMIT"
+
           # JustUI currently references font_t.line_distance, which was
           # removed from the current gint C font structure. Fetch JustUI
           # through GiteaPC, then patch the two affected references to the
@@ -174,7 +185,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: ~/.local
-          key: fxsdk-${{ runner.os }}-badbd0fd-09e2cf5f-ccb5feae-v1
+          key: fxsdk-${{ runner.os }}-982055c9-09e2cf5f-ccb5feae-v1
 
       - name: Record dependency versions
         shell: bash
