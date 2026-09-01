@@ -216,6 +216,9 @@ jobs:
               b"PythonExtra": "application identity",
               b"*** SHELL INITIALIZED ***": "interactive REPL",
               b"dtriangle": "native triangle binding",
+              b"numpy": "compact numeric module",
+              b"matmul": "matrix multiplication helper",
+              b"normalize": "vector normalization helper",
           }
           missing = [label for marker, label in required.items() if marker not in data]
           if missing:
