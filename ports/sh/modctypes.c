@@ -43,7 +43,7 @@ static size_t modctypes_index(mp_obj_t value, size_t length)
 {
     mp_int_t index = mp_obj_get_int(value);
     if(index < 0 || (size_t)index >= length)
-        mp_raise_IndexError("buffer index out of range");
+        mp_raise_ValueError("buffer index out of range");
     return (size_t)index;
 }
 
