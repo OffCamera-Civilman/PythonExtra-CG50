@@ -17,6 +17,7 @@ SRC_C = \
     ports/sh/fdfile.c \
     ports/sh/keymap.c \
     ports/sh/modcasioplot.c \
+    ports/sh/modctypes.c \
     ports/sh/modgint.c \
     ports/sh/modnumpy.c \
     ports/sh/mphalport.c \
@@ -34,6 +35,7 @@ SRC_QSTR += \
     ports/sh/fdfile.c \
     ports/sh/main.c \
     ports/sh/modcasioplot.c \
+    ports/sh/modctypes.c \
     ports/sh/modgint.c \
     ports/sh/modnumpy.c \
     ports/sh/objgintimage.c \
