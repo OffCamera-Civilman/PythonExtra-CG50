@@ -99,18 +99,44 @@ jobs:
           export PATH="$HOME/.local/bin:$PATH"
 
           # GNU mirrors occasionally return a tiny HTML error page while
-          # GiteaPC expects the GCC tarball. Retry after removing the corrupt
-          # archive and partial extraction instead of preserving a bad file.
+          # GiteaPC expects an xz archive. After a failed attempt, validate and
+          # pre-seed both GNU archives from the primary server before retrying.
+          ensure_xz_archive() {
+            local url="$1"
+            local destination="$2"
+            local temporary="${destination}.tmp"
+
+            if xz -t "$destination" >/dev/null 2>&1; then
+              return 0
+            fi
+
+            rm -f "$destination" "$temporary"
+            mkdir -p "$(dirname "$destination")"
+            curl --fail --location \
+              --retry 5 --retry-delay 10 --retry-all-errors \
+              --connect-timeout 30 "$url" -o "$temporary"
+            xz -t "$temporary"
+            mv "$temporary" "$destination"
+          }
+
           install_with_retry() {
             local attempt
+            local binutils_root="$HOME/.local/share/giteapc/Lephenixnoir/sh-elf-binutils"
+            local gcc_root="$HOME/.local/share/giteapc/Lephenixnoir/sh-elf-gcc"
+
             for attempt in 1 2 3; do
               if printf '\n' | giteapc install "$@"; then
                 return 0
               fi
 
-              echo "GiteaPC attempt $attempt failed; cleaning partial GCC download"
-              rm -f "$HOME/.local/share/giteapc/Lephenixnoir/sh-elf-gcc/gcc-14.1.0.tar.xz"
-              rm -rf "$HOME/.local/share/giteapc/Lephenixnoir/sh-elf-gcc/gcc-14.1.0"
+              echo "GiteaPC attempt $attempt failed; repairing GNU archives"
+              rm -rf "$binutils_root/binutils-2.42" "$gcc_root/gcc-14.1.0"
+              ensure_xz_archive \
+                "https://ftp.gnu.org/gnu/binutils/binutils-2.42.tar.xz" \
+                "$binutils_root/binutils-2.42.tar.xz"
+              ensure_xz_archive \
+                "https://ftp.gnu.org/gnu/gcc/gcc-14.1.0/gcc-14.1.0.tar.xz" \
+                "$gcc_root/gcc-14.1.0.tar.xz"
               if [ "$attempt" -lt 3 ]; then
                 sleep $((attempt * 10))
               fi
