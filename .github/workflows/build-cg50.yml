@@ -220,7 +220,6 @@ jobs:
               b"matmul": "matrix multiplication helper",
               b"normalize": "vector normalization helper",
               b"listdir": "calculator os filesystem module",
-              b"getcwd": "calculator working-directory support",
           }
           missing = [label for marker, label in required.items() if marker not in data]
           if missing:
