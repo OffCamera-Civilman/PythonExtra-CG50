@@ -20,7 +20,7 @@ void pe_debug_panic(char const *msg)
     int dy = dfont_default()->line_height + 2;
 
     dclear(C_BLACK);
-    dtext(1, 1, C_WHITE, "PythonExtra panic!");
+    dtext(1, 1, C_WHITE, "PythonUltra panic!");
     dtext(1, 1+dy, C_WHITE, msg);
     dupdate();
 

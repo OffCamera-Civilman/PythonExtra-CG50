@@ -42,7 +42,7 @@
 #include "resources.h"
 
 #ifdef HH2_NAME
-HH2_NAME("PythonExtra " PE_BUILD)
+HH2_NAME("PythonUltra " PE_BUILD)
 HH2_DESCRIPTION("Python application based on MicroPython "
                 MICROPY_VERSION_STRING_BASE " and gint.")
 HH2_AUTHOR("Lephe, SlyVTT & Planete Casio contributors")
@@ -278,9 +278,9 @@ static void pe_update_title(void)
     }
 #else
     if(!folder)
-        jlabel_set_text(PE.title, "PythonExtra");
+        jlabel_set_text(PE.title, "PythonUltra");
     else
-        jlabel_asprintf(PE.title, "PythonExtra (%s)", folder);
+        jlabel_asprintf(PE.title, "PythonUltra (%s)", folder);
 #endif
 }
 

@@ -258,7 +258,11 @@ jobs:
             done
           } > build-info/gint-compat-ancestry.txt
 
-      - name: Build PythonExtra for fx-CG50
+      - name: Test compact pygame compatibility layer
+        shell: bash
+        run: python3 tests/ports/sh/pygame_compat.py
+
+      - name: Build PythonUltra for fx-CG50
         shell: bash
         run: |
           set -euo pipefail
@@ -272,22 +276,28 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
 
-          g3a = Path("ports/fxcg50/PythonExtra.g3a")
+          g3a = Path("ports/fxcg50/PythonUltra.g3a")
           data = g3a.read_bytes()
 
           if len(data) < 100_000:
               raise SystemExit(f"G3A is unexpectedly small: {len(data)} bytes")
+          if len(data) >= 2_000_000:
+              raise SystemExit(f"G3A exceeds the 2 MB target: {len(data)} bytes")
 
           # Static smoke checks cannot replace calculator testing, but they do
           # catch stripped or mispackaged builds before publishing an artifact.
           required = {
-              b"PythonExtra": "application identity",
+              b"PythonUltra": "application identity",
               b"*** SHELL INITIALIZED ***": "interactive REPL",
               b"dtriangle": "native triangle binding",
               b"numpy": "compact numeric module",
               b"matmul": "matrix multiplication helper",
               b"normalize": "vector normalization helper",
               b"listdir": "calculator os filesystem module",
+              b"pygame": "pygame compatibility package",
+              b"Surface": "pygame surfaces",
+              b"Clock": "pygame frame clock",
+              b"spritecollide": "pygame sprite collisions",
           }
           missing = [label for marker, label in required.items() if marker not in data]
           if missing:
@@ -301,8 +311,8 @@ jobs:
       - name: Upload G3A
         uses: actions/upload-artifact@v4
         with:
-          name: PythonExtra-CG50
+          name: PythonUltra-CG50
           path: |
-            ports/fxcg50/PythonExtra.g3a
+            ports/fxcg50/PythonUltra.g3a
             build-info/
           if-no-files-found: error

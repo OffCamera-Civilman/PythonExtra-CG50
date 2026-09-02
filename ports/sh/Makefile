@@ -1,5 +1,13 @@
 CROSS_COMPILE := sh-elf-
 
+# The compact pygame layer currently targets the color fx-CG50 build. Point
+# MPY_LIB_DIR at the source tree because this manifest uses no micropython-lib
+# packages; mkrules only requires a directory containing README.md.
+ifeq ($(TARGETCASIO),"FXCG50")
+    MPY_LIB_DIR := $(TOP)
+    FROZEN_MANIFEST := $(TOP)/ports/sh/manifest.py
+endif
+
 include $(TOP)/py/py.mk
 include $(TOP)/extmod/extmod.mk
 
@@ -85,7 +93,7 @@ else ifeq ($(TARGETCASIO),"FXCP")
     PE_EXT_NUMWORKS := 0
 endif
 
-HEADER := PythonExtra for $(PE_NAME)
+HEADER := PythonUltra for $(PE_NAME)
 HEADER := $(shell echo -e "\x1b[4;1m$(HEADER)\x1b[0m")
 HEADER := $(HEADER) - $(BUILDTYPE_STR)
 HASHES := \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
@@ -109,14 +117,14 @@ $(BUILD)/sh_assets/%.o: % $(SH_METADATA)
 	$(Q)mkdir -p $(dir $@)
 	$(Q)fxconv --toolchain=$(CROSS_COMPILE:%-=%) $(SH_CONVFLAGS) $< -o $@
 
-ARCHIVE := PythonExtra-$(GIT_DESCRIBE).zip
+ARCHIVE := PythonUltra-$(GIT_DESCRIBE).zip
 
 # Weird rules calling back to fxcg50 and fx9860g3, both of which include this
 release:
 	$(MAKE) -C ../fx9860g3
 	$(MAKE) -C ../fxcg50
 	$(MAKE) -C ../fxcp
-	cd ../sh && zip "$(ARCHIVE)" -j ../fx9860g3/PythonEx.g1a ../fxcg50/PythonExtra.g3a ../fxcp/PythonExtra-hh2.bin
+	cd ../sh && zip "$(ARCHIVE)" -j ../fx9860g3/PythonEx.g1a ../fxcg50/PythonUltra.g3a ../fxcp/PythonExtra-hh2.bin
 	cd ../sh && zip "$(ARCHIVE)" -r examples modules
 
 .PHONY: release
