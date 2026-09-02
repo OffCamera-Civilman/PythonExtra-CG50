@@ -24,6 +24,7 @@ SRC_C = \
     ports/sh/debug.c \
     ports/sh/fdfile.c \
     ports/sh/keymap.c \
+    ports/sh/libc_compat.c \
     ports/sh/modcasioplot.c \
     ports/sh/modctypes.c \
     ports/sh/modgint.c \
@@ -39,6 +40,10 @@ SRC_C = \
     shared/runtime/gchelper_generic.c \
     shared/runtime/stdout_helpers.c \
     shared/runtime/interrupt_char.c \
+
+# Prevent GCC from rewriting these fallback libc implementations as calls to
+# the same unavailable target symbols.
+$(BUILD)/ports/sh/libc_compat.o: CFLAGS += $(CFLAGS_BUILTIN)
 
 SRC_QSTR += \
     ports/sh/fdfile.c \
