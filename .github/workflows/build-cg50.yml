@@ -158,9 +158,12 @@ jobs:
           GINT_COMMIT=982055c999bdd0d73d23dad7c75ad5bd87b22922
           GINT_DIR="$(giteapc show -p Lephenixnoir/gint)"
           git -C "$GINT_DIR" checkout --detach "$GINT_COMMIT"
-          gmake -C "$GINT_DIR" -f giteapc.make configure
-          gmake -C "$GINT_DIR" -f giteapc.make build
-          gmake -C "$GINT_DIR" -f giteapc.make install
+          (
+            cd "$GINT_DIR"
+            fxsdk build-cg -c
+            fxsdk build-cg
+            fxsdk build-cg install
+          )
           test "$(git -C "$GINT_DIR" rev-parse HEAD)" = "$GINT_COMMIT"
 
           # JustUI currently references font_t.line_distance, which was
