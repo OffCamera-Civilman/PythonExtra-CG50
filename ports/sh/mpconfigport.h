@@ -83,6 +83,7 @@ extern const struct _mp_print_t mp_debug_print;
 #define MICROPY_PY_CMATH                  (1)
 #define MICROPY_PY_GC                     (1)
 #define MICROPY_PY_IO                     (1)
+#define MICROPY_PY_IO_FILEIO              (1)
 #define MICROPY_PY_JSON                   (1)
 #define MICROPY_PY_STRUCT                 (1)
 #define MICROPY_PY_RANDOM                 (1)
@@ -129,4 +130,3 @@ typedef long mp_off_t;
 #define MICROPY_HW_MCU_NAME   "sh-4a"
 
 #define MP_STATE_PORT MP_STATE_VM
-
