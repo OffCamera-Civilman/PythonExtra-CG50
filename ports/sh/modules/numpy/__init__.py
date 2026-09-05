@@ -1,14 +1,14 @@
 """Tiny NumPy-compatible subset for PythonUltra on the Casio fx-CG50.
 
-This module is intentionally small and pure Python.  It targets common game,
+This module is intentionally small and pure Python. It targets common game,
 geometry and classroom scripts rather than scientific-computing completeness.
 Arrays are stored contiguously as Python values and support basic construction,
-indexing, reshape and element-wise arithmetic.
+indexing, reshape, element-wise arithmetic and small matrix operations.
 """
 
 import math as _math
 
-__version__ = "0.1.0-cg50"
+__version__ = "0.1.1-cg50"
 pi = _math.pi
 e = _math.e
 
@@ -220,10 +220,13 @@ class ndarray:
         return ndarray([-a for a in self._data], self.shape, self.dtype, True)
 
     def sum(self):
-        return sum(self._data)
+        total = 0
+        for value in self._data:
+            total += value
+        return total
 
     def mean(self):
-        return sum(self._data) / self.size if self.size else 0
+        return self.sum() / self.size if self.size else 0
 
     def min(self):
         return min(self._data)
@@ -304,7 +307,10 @@ def dot(a, b):
     if a.ndim == 1 and b.ndim == 1:
         if a.size != b.size:
             raise ValueError("vectors must have the same length")
-        return sum(x * y for x, y in zip(a._data, b._data))
+        total = 0
+        for x, y in zip(a._data, b._data):
+            total += x * y
+        return total
     if a.ndim == 2 and b.ndim == 1:
         rows, cols = a.shape
         if cols != b.size:
@@ -312,9 +318,52 @@ def dot(a, b):
         result = []
         for row in range(rows):
             start = row * cols
-            result.append(sum(a._data[start + col] * b._data[col] for col in range(cols)))
+            total = 0
+            for col in range(cols):
+                total += a._data[start + col] * b._data[col]
+            result.append(total)
         return ndarray(result)
     raise NotImplementedError("dot currently supports 1-D dot and 2-D by 1-D")
+
+
+def matmul(a, b):
+    """Matrix product for small 1-D/2-D arrays used by CG50 games."""
+    a = asarray(a)
+    b = asarray(b)
+
+    if a.ndim == 1 and b.ndim == 1:
+        return dot(a, b)
+
+    if a.ndim == 2 and b.ndim == 1:
+        return dot(a, b)
+
+    if a.ndim == 1 and b.ndim == 2:
+        rows, cols = b.shape
+        if a.size != rows:
+            raise ValueError("shapes are not aligned")
+        result = []
+        for col in range(cols):
+            total = 0
+            for row in range(rows):
+                total += a._data[row] * b._data[row * cols + col]
+            result.append(total)
+        return ndarray(result)
+
+    if a.ndim == 2 and b.ndim == 2:
+        a_rows, a_cols = a.shape
+        b_rows, b_cols = b.shape
+        if a_cols != b_rows:
+            raise ValueError("shapes are not aligned")
+        result = []
+        for row in range(a_rows):
+            for col in range(b_cols):
+                total = 0
+                for k in range(a_cols):
+                    total += a._data[row * a_cols + k] * b._data[k * b_cols + col]
+                result.append(total)
+        return ndarray(result, (a_rows, b_cols), _flat=True)
+
+    raise NotImplementedError("matmul currently supports 1-D and 2-D arrays")
 
 
 def _unary(value, function):
@@ -340,7 +389,7 @@ def tan(value):
 
 
 def abs(value):
-    return _unary(value, __builtins__.abs if hasattr(__builtins__, "abs") else lambda x: -x if x < 0 else x)
+    return _unary(value, lambda x: -x if x < 0 else x)
 
 
 def sum(value):
