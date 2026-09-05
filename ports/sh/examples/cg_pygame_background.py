@@ -1,7 +1,10 @@
 """PythonUltra fx-CG50 pygame.image.load() hardware test.
 
-Copy an uncompressed 24-bit or 32-bit BMP named ``background.bmp`` beside
-this script. A 396x224 image is ideal for a full-screen test with no scaling.
+Copy an uncompressed 24-bit BMP named ``sprite.bmp`` beside this script.
+Keep calculator-loaded images at or below 56x56 pixels. The display itself is
+396x224, but allocating a full-screen RGB565 Surface requires 177408 contiguous
+bytes and can exhaust the fx-CG50 MicroPython heap.
+
 Press EXIT to leave the example.
 """
 
@@ -10,7 +13,8 @@ import pygame
 
 pygame.init()
 screen = pygame.display.set_mode((396, 224))
-background = pygame.image.load("background.bmp")
+sprite = pygame.image.load("sprite.bmp")
+rect = sprite.get_rect(center=(198, 112))
 
 running = True
 while running:
@@ -21,7 +25,8 @@ while running:
               current_event.key == pygame.K_ESCAPE):
             running = False
 
-    screen.blit(background, (0, 0))
+    screen.fill("black")
+    screen.blit(sprite, rect)
     pygame.display.flip()
 
 pygame.quit()
