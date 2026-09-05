@@ -8,6 +8,13 @@ SH_ASSETS := img_modifier_states.png font_9.png font_13.png font_19.png PoliceNW
 SH_METADATA := fxconv-metadata.txt
 SH_CONVFLAGS := --cg
 
+.PHONY: pythonultra-runtime-fixes
+pythonultra-runtime-fixes:
+	python3 ../sh/apply_runtime_fixes.py
+
+# The frozen Python modules must be patched before firmware.bin is generated.
+$(BUILD)/firmware.bin: pythonultra-runtime-fixes
+
 all: PythonUltra.g3a
 
 ICONS_RELEASE := --icon-uns=icon-uns.png --icon-sel=icon-sel.png
