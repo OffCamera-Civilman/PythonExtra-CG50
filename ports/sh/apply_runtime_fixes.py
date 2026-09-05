@@ -2,7 +2,9 @@
 
 The fx-CG50 MicroPython port supports indexed bytearray writes but rejects the
 CPython-style bytearray slice assignments used by pygame Surface.copy()/fill().
-Patch those two hot paths into equivalent CG50-safe implementations.
+Real-hardware testing also shows that image surfaces must stay at or below
+56x56 pixels to avoid large contiguous heap allocations. Apply both fixes before
+freezing the pygame package into PythonUltra.
 """
 
 from pathlib import Path
@@ -34,11 +36,16 @@ def main():
     text, did_change = replace_once(text, old_copy, new_copy, "Surface.copy")
     changed = changed or did_change
 
+    old_bmp = '''    if width <= 0 or signed_height == 0 or bpp not in (24, 32) or compression != 0:\n        raise error("BMP must be uncompressed 24-bit or 32-bit")\n    height = abs(signed_height)\n    result = Surface((width, height))\n'''
+    new_bmp = '''    if width <= 0 or signed_height == 0 or bpp not in (24, 32) or compression != 0:\n        raise error("BMP must be uncompressed 24-bit or 32-bit")\n    height = abs(signed_height)\n    # Real fx-CG50 heap testing: a full 396x224 RGB565 Surface requests\n    # 177408 contiguous bytes and fails. Keep loadable game images to the\n    # established 56x56 hardware-safe limit and reject larger files before\n    # allocating the Surface backing buffer.\n    if width > 56 or height > 56:\n        raise error("BMP exceeds fx-CG50 56x56 image limit")\n    result = Surface((width, height))\n'''
+    text, did_change = replace_once(text, old_bmp, new_bmp, "BMP 56x56 limit")
+    changed = changed or did_change
+
     if changed:
         PYGAME.write_text(text, encoding="utf-8")
-        print("Applied fx-CG50 pygame bytearray compatibility fixes")
+        print("Applied fx-CG50 pygame bytearray and 56x56 image-limit fixes")
     else:
-        print("fx-CG50 pygame bytearray compatibility fixes already applied")
+        print("fx-CG50 pygame runtime fixes already applied")
 
 
 if __name__ == "__main__":
