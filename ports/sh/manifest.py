@@ -1,2 +1,3 @@
-# Freeze the calculator-sized pygame compatibility package into the add-in.
+# Freeze calculator-sized compatibility packages into the add-in.
 freeze("modules", "pygame", opt=3)
+freeze("modules", "numpy", opt=3)
