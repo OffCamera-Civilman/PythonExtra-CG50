@@ -11,8 +11,11 @@ SH_CONVFLAGS := --cg
 .PHONY: pythonultra-runtime-fixes
 pythonultra-runtime-fixes:
 	python3 ../sh/apply_runtime_fixes.py
+	python3 ../../tests/ports/sh/pygame_compat.py
+	python3 ../../tests/ports/sh/pygame_cg50_regression.py
+	python3 ../../tests/ports/sh/numpy_compat.py
 
-# The frozen Python modules must be patched before firmware.bin is generated.
+# The frozen Python modules must be patched and tested before firmware.bin is generated.
 $(BUILD)/firmware.bin: pythonultra-runtime-fixes
 
 all: PythonUltra.g3a
