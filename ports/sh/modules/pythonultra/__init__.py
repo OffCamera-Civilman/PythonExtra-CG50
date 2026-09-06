@@ -1,6 +1,6 @@
 """PythonUltra on-calculator reference and UI helpers."""
 
-__version__ = "0.3.1-cg50"
+__version__ = "0.3.2-cg50"
 
 try:
     from ._build import BUILD_ID
@@ -36,8 +36,8 @@ _CATALOG = (
     ("ion", ("keydown",)),
 )
 
-UI_LIGHT = {"bg":0xFFFF, "fg":0x0000, "bar":0xD69A, "sel_bg":0x07E0, "sel_fg":0xFFFF, "title":0x001F}
-UI_DARK = {"bg":0x1082, "fg":0xD69A, "bar":0x3186, "sel_bg":0x2148, "sel_fg":0xFFFF, "title":0x7D7C}
+UI_LIGHT = {"bg":0xFFFF, "fg":0x0000, "bar":0xD69A, "sel_bg":0x2104, "sel_fg":0xFFFF, "title":0x001F, "accent":0x07E0}
+UI_DARK = {"bg":0x1082, "fg":0xD69A, "bar":0x3186, "sel_bg":0x2148, "sel_fg":0xFFFF, "title":0x7D7C, "accent":0x07FF}
 
 
 def modules():
@@ -65,39 +65,77 @@ def catalog(name=None):
 
 
 def popup(title, items, dark=False):
-    """Display a calculator-sized modal list and return the chosen item."""
+    """Display a Geometry-style modal list and return the chosen item."""
     import gint
     if not items:
         return None
     colors = UI_DARK if dark else UI_LIGHT
     selected = 0
     scroll = 0
-    max_visible = 11
+    max_visible = 10
+    panel_x = 34
+    panel_right = 362
+    panel_top = 39
+    row_top = 58
+    row_h = 15
+    title_text = str(title)
     while True:
         visible = min(len(items), max_visible)
-        bottom = min(220, 66 + visible * 12)
-        gint.drect(50, 28, 345, bottom, colors["bg"])
-        gint.drect_border(50, 28, 345, bottom, colors["bar"], 2, colors["bg"])
-        gint.dtext(58, 36, colors["title"], title[:34])
+        bottom = min(215, row_top + visible * row_h + 7)
+
+        # Offset back layer and bright frame echo the native Geometry menus.
+        gint.drect(panel_x + 5, panel_top + 5,
+                   panel_right + 5, min(220, bottom + 5), colors["bar"])
+        gint.drect_border(panel_x, panel_top, panel_right, bottom,
+                          colors["accent"], 2, colors["bg"])
+
+        # Active tab overlaps the frame so the modal reads like an F-key page.
+        tab_x = panel_x + 14
+        tab_right = min(panel_right - 12,
+                        tab_x + max(94, min(214, 26 + len(title_text) * 8)))
+        gint.drect_border(tab_x, panel_top - 16, tab_right, panel_top + 1,
+                          colors["accent"], 2, colors["bg"])
+        gint.dtext(tab_x + 8, panel_top - 13, colors["title"], title_text[:23])
+
         if selected < scroll:
             scroll = selected
         if selected >= scroll + max_visible:
             scroll = selected - max_visible + 1
+
         for row in range(max_visible):
             idx = scroll + row
             if idx >= len(items):
                 break
+            y = row_top + row * row_h
             bg = colors["sel_bg"] if idx == selected else colors["bg"]
             fg = colors["sel_fg"] if idx == selected else colors["fg"]
-            gint.drect(55, 52 + row * 12, 340, 63 + row * 12, bg)
-            prefix = str(row + 1) if row < 9 else ("A" if row == 9 else "B")
-            gint.dtext(59, 52 + row * 12, fg, prefix + ". " + str(items[idx])[:31])
+            gint.drect(panel_x + 8, y, panel_right - 8, y + row_h - 1, bg)
+            prefix = str(row + 1) if row < 9 else "0"
+            gint.dtext(panel_x + 14, y + 1, fg,
+                       prefix + ":" + str(items[idx])[:34])
+
+        if scroll > 0:
+            gint.dtext(panel_right - 19, panel_top + 4, colors["accent"], "^")
+        if scroll + max_visible < len(items):
+            gint.dtext(panel_right - 19, bottom - 12, colors["accent"], "v")
+
         gint.dupdate()
         key = gint.getkey().key
         if key in (gint.KEY_EXIT, gint.KEY_LEFT):
             return None
         if key in (gint.KEY_EXE, gint.KEY_RIGHT):
             return items[selected]
+
+        number_keys = (
+            gint.KEY_1, gint.KEY_2, gint.KEY_3, gint.KEY_4, gint.KEY_5,
+            gint.KEY_6, gint.KEY_7, gint.KEY_8, gint.KEY_9, gint.KEY_0,
+        )
+        for row, number_key in enumerate(number_keys):
+            if key == number_key:
+                idx = scroll + row
+                if idx < len(items):
+                    return items[idx]
+
         if key == gint.KEY_UP:
             selected = max(0, selected - 1)
         elif key == gint.KEY_DOWN:
