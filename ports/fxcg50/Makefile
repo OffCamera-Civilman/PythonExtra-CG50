@@ -14,6 +14,7 @@ pythonultra-runtime-fixes:
 	python3 ../sh/apply_pythonultra_features.py
 	python3 ../sh/apply_pythonultra_ui2.py
 	python3 ../sh/apply_pythonultra_permissions.py
+	python3 ../sh/apply_pythonultra_fonts.py
 	python3 -m py_compile \
 		../sh/modules/pythonultra/__init__.py \
 		../sh/modules/pyeditor/__init__.py \
