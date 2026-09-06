@@ -30,13 +30,27 @@ main = (SH / "main.c").read_text(encoding="utf-8")
 widget = (SH / "widget_shell.c").read_text(encoding="utf-8")
 config = (SH / "mpconfigport.h").read_text(encoding="utf-8")
 manifest = (SH / "manifest.py").read_text(encoding="utf-8")
+pyterm = (MODULES / "pyterm" / "__init__.py").read_text(encoding="utf-8")
+pyfiles = (MODULES / "pyfiles" / "__init__.py").read_text(encoding="utf-8")
+pyeditor = (MODULES / "pyeditor" / "__init__.py").read_text(encoding="utf-8")
 
 assert "pythonultra_help_text" in main
 assert "MICROPY_PY_BUILTINS_HELP_TEXT     pythonultra_help_text" in config
-assert "key == KEY_F3" in main and "_pu.catalog()" in main
+assert "key == KEY_F3" in main and "_pu.catalog_ui(" in main
 assert "key == KEY_F4" in main and "pe_apply_theme()" in main
+assert "key == KEY_F5" in main and "pyeditor" in main
+assert "key == KEY_F6" in main and "_pu.info_ui(" in main
+assert "pe_terminal_dispatch" in main and "MP_QSTR_pyterm" in main
 assert "widget_shell_history_recall" in widget
 assert "widget_shell_history_push" in widget
 assert 'freeze("modules", "pythonultra", opt=3)' in manifest
+assert 'freeze("modules", "pyeditor", opt=3)' in manifest
+assert 'freeze("modules", "pyfiles", opt=3)' in manifest
+assert 'freeze("modules", "pyterm", opt=3)' in manifest
+assert 'freeze("modules", "zipfile", opt=3)' in manifest
+assert "python--h" in pyterm and "def dispatch(" in pyterm
+assert "zip" in pyterm and "unzip" in pyterm
+assert "create_new" in pyfiles and "rename_selected" in pyfiles and "delete_selected" in pyfiles
+assert "GitHub Dark" in pyeditor and "GitHub Light" in pyeditor and "Linux" in pyeditor
 
 print("PythonUltra feature regression checks passed")
