@@ -118,7 +118,7 @@ _MAN = {
         "SYNOPSIS: python",
         "          python file.py [args ...]",
         "          python -c code [args ...]",
-        "          python -h | python --help",
+        "          python -h | python --help | python --h | python -help",
         "python file.py follows Linux interpreter behavior: read permission",
         "Direct ./file.py additionally requires execute permission",
         "exit or exit() returns from REPL to terminal",
@@ -577,7 +577,7 @@ def dispatch(line):
 
     if lower == "python":
         if not args: return ENTER_PYTHON
-        if args[0] in ("-h", "--help"): man("python"); return 0
+        if args[0] in ("-h", "--help", "--h", "-help"): man("python"); return 0
         if args[0] in ("-V", "--version"):
             print("PythonUltra MicroPython " + sys.version); return 0
         if args[0] == "-c":
