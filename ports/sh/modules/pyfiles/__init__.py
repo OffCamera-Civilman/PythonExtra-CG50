@@ -5,7 +5,7 @@ import os
 import sys
 import pyperm
 
-__version__ = "0.3.2-cg50"
+__version__ = "0.4.0-cg50"
 
 SCREEN_W = 396
 SCREEN_H = 224
@@ -19,6 +19,7 @@ TEXT_EXTENSIONS = (
     ".xml", ".html", ".css", ".js", ".c", ".h", ".cpp", ".hpp", ".sh",
     ".toml", ".yaml", ".yml", ".rst", ".dat",
 )
+IMAGE_EXTENSIONS = (".bmp", ".ppm", ".jpg", ".jpeg")
 
 
 def _gint():
@@ -59,6 +60,27 @@ def _looks_text(path):
     return "." not in _basename(path)
 
 
+def _file_type(path):
+    lower = path.lower()
+    if lower.endswith(".py"): return "Python source"
+    if lower.endswith(".zip"): return "ZIP archive"
+    if lower.endswith((".jpg", ".jpeg")): return "JPEG image"
+    if lower.endswith(".bmp"): return "BMP image"
+    if lower.endswith(".ppm"): return "PPM image"
+    if lower.endswith((".txt", ".md", ".log", ".rst")): return "Text file"
+    if lower.endswith(".csv"): return "CSV data"
+    if lower.endswith(".json"): return "JSON data"
+    if lower.endswith((".c", ".h", ".cpp", ".hpp")): return "C/C++ source"
+    if lower.endswith((".html", ".css", ".js")): return "Web source"
+    if _looks_text(path): return "Text file"
+    return "File"
+
+
+def _mode_string(path):
+    try: return "%03o" % pyperm.get_mode(path)
+    except Exception: return "---"
+
+
 class Browser:
     def __init__(self, folder="/", theme="GitHub Dark"):
         import pyeditor
@@ -94,6 +116,18 @@ class Browser:
         entry = self.selected_entry()
         return _join(self.folder, entry[0]) if entry else None
 
+    def draw_softkeys(self, labels):
+        g, p = self.g, self.palette
+        y = SCREEN_H - NAV_H
+        for i in range(6):
+            x0 = i * 66
+            x1 = min(SCREEN_W - 1, x0 + 65)
+            g.drect(x0, y, x1, SCREEN_H - 1, p[2])
+            g.drect_border(x0 + 1, y, x1 - 1, SCREEN_H - 1, p[13], 1, p[2])
+            label = labels[i] if i < len(labels) else ""
+            if label:
+                g.dtext(x0 + 5, y + 1, p[3], label[:7])
+
     def draw(self):
         g, p = self.g, self.palette
         g.dclear(p[0])
@@ -101,9 +135,10 @@ class Browser:
         title = "FILES " + self.folder
         if self.msg: title += "  " + self.msg
         selected = self.selected_entry()
-        hint = "EXE:UNZIP" if selected and (not selected[1]) and selected[0].lower().endswith(".zip") else "OPTN:MORE"
+        hint = "EXE:INFO"
+        if selected and selected[1]: hint = "EXE:OPEN"
         g.dtext(4, 3, p[3], title[:35])
-        g.dtext(308, 3, p[3], hint)
+        g.dtext(314, 3, p[3], hint)
         if self.selected < self.scroll: self.scroll = self.selected
         if self.selected >= self.scroll + VISIBLE: self.scroll = self.selected - VISIBLE + 1
         for row in range(VISIBLE):
@@ -117,10 +152,7 @@ class Browser:
             g.drect(2, y, SCREEN_W - 3, y + ROW_H - 1, bg)
             marker = "[D] " if is_dir else ("[Z] " if name.lower().endswith(".zip") else "    ")
             g.dtext(6, y + 1, fg, (marker + name)[:46])
-        y = SCREEN_H - NAV_H
-        g.drect(0, y, SCREEN_W - 1, SCREEN_H - 1, p[2])
-        for i, label in enumerate(("RUN", "EDIT", "NEW", "REN", "DEL", "EDTR")):
-            g.dtext(2 + i * 66, y + 1, p[3], "F%d:%s" % (i + 1, label))
+        self.draw_softkeys(("RUN", "EDIT", "NEW", "REN", "DEL", "EDTR"))
         g.dupdate()
 
     def popup(self, title, items):
@@ -159,20 +191,105 @@ class Browser:
             if char: text += char
             if shift_on: shift_on = False
 
+    def text_viewer(self, path):
+        g, p = self.g, self.palette
+        try:
+            pyperm.require_read(path)
+            with open(path, "r") as f: text = f.read(12288)
+        except Exception as exc:
+            self.msg = "Open " + str(exc)[:12]; return
+        lines = text.split("\n") if text else [""]
+        top = 0
+        rows = 17
+        while True:
+            g.dclear(p[0])
+            g.drect(0, 0, SCREEN_W - 1, HEADER_H - 1, p[2])
+            g.dtext(4, 3, p[3], ("OPEN " + _basename(path))[:44])
+            for row in range(rows):
+                idx = top + row
+                if idx >= len(lines): break
+                g.dtext(4, HEADER_H + row * 11, p[1], lines[idx][:48])
+            self.draw_softkeys(("", "", "", "", "", "BACK"))
+            g.dupdate(); key = g.getkey().key
+            if key in (g.KEY_EXIT, g.KEY_F6, g.KEY_LEFT): return
+            if key == g.KEY_UP: top = max(0, top - 1)
+            elif key == g.KEY_DOWN: top = min(max(0, len(lines) - rows), top + 1)
+            elif key == g.KEY_ADD: top = min(max(0, len(lines) - rows), top + rows)
+            elif key == g.KEY_SUB: top = max(0, top - rows)
+
+    def checksum_ui(self, path):
+        g, p = self.g, self.palette
+        try:
+            import checksum
+            self.msg = "Hashing..."; self.draw()
+            sha256 = checksum.sha256_file(path)
+            sha1 = checksum.sha1_file(path)
+        except Exception as exc:
+            print("Checksum error:", repr(exc)); self.msg = "Hash error"; return
+        while True:
+            g.dclear(p[0])
+            g.drect(0, 0, SCREEN_W - 1, HEADER_H - 1, p[2])
+            g.dtext(4, 3, p[3], "CHECKSUM " + _basename(path)[:31])
+            g.dtext(8, 28, p[1], "SHA-256:")
+            g.dtext(8, 43, p[1], sha256[:32])
+            g.dtext(8, 56, p[1], sha256[32:64])
+            g.dtext(8, 82, p[1], "SHA-1:")
+            g.dtext(8, 97, p[1], sha1[:32])
+            g.dtext(8, 110, p[1], sha1[32:40])
+            g.dtext(8, 144, p[1], "Streaming hashes; file not loaded into RAM")
+            self.draw_softkeys(("", "", "", "", "", "BACK"))
+            g.dupdate(); key = g.getkey().key
+            if key in (g.KEY_EXIT, g.KEY_F6, g.KEY_LEFT): break
+        self.msg = "Hashes OK"
+
+    def file_info(self, path):
+        g, p = self.g, self.palette
+        try: st = os.stat(path)
+        except OSError as exc:
+            self.msg = "Stat " + str(exc)[:12]; return
+        lower = path.lower()
+        while True:
+            action = "RUN" if lower.endswith(".py") else ("UNZIP" if lower.endswith(".zip") else "PERM")
+            g.dclear(p[0])
+            g.drect(0, 0, SCREEN_W - 1, HEADER_H - 1, p[2])
+            g.dtext(4, 3, p[3], "FILE INFORMATION")
+            g.dtext(8, 28, p[1], "Filename: " + _basename(path)[:35])
+            g.dtext(8, 47, p[1], "Path: " + path[:40])
+            g.dtext(8, 66, p[1], "Type: " + _file_type(path))
+            g.dtext(8, 85, p[1], "Size: " + str(st[6]) + " bytes")
+            g.dtext(8, 104, p[1], "Permissions: " + _mode_string(path))
+            if len(st) > 8:
+                g.dtext(8, 123, p[1], "Modified: " + str(st[8]))
+            g.dtext(8, 153, p[1], "EXE from Files opens this information page")
+            self.draw_softkeys(("OPEN", "EDIT", "ZIP", action, "HASH", "BACK"))
+            g.dupdate(); key = g.getkey().key
+            if key == g.KEY_F1:
+                if _looks_text(path): self.text_viewer(path)
+                elif lower.endswith(IMAGE_EXTENSIONS):
+                    self.msg = "Image preview next"; return
+                else:
+                    self.msg = "No viewer"; return
+            elif key == g.KEY_F2:
+                self.edit_file(path); return
+            elif key == g.KEY_F3:
+                self.compress_selected(path); return
+            elif key == g.KEY_F4:
+                if lower.endswith(".py"): self.run_file(path); return
+                if lower.endswith(".zip"): self.extract_selected(path); return
+                self.permission_menu(path)
+                try: st = os.stat(path)
+                except OSError: return
+            elif key == g.KEY_F5:
+                self.checksum_ui(path)
+            elif key in (g.KEY_F6, g.KEY_EXIT, g.KEY_LEFT): return
+
     def enter_selected(self):
         entry = self.selected_entry()
         if not entry: return
         name, is_dir = entry; path = _join(self.folder, name)
         if is_dir:
             self.folder = path; self.selected = self.scroll = 0; self.msg = ""; self.refresh(); return
-        if name.lower().endswith(".py"):
-            choice = self.popup(name, ("Run", "Edit", "Cancel"))
-            if choice == "Run": self.run_file(path)
-            elif choice == "Edit": self.edit_file(path)
-        elif name.lower().endswith(".zip"):
-            choice = self.popup(name, ("Extract ZIP", "Cancel"))
-            if choice == "Extract ZIP": self.extract_selected()
-        else: self.edit_file(path)
+        self.file_info(path)
 
     def run_file(self, path=None):
         path = path or self.selected_path()
@@ -206,8 +323,7 @@ class Browser:
     def open_editor(self):
         try:
             result = self.pyeditor.new_file(_join(self.folder, "new.py"), self.theme_name)
-            if result == "run":
-                self.run_file(_join(self.folder, "new.py"))
+            if result == "run": self.run_file(_join(self.folder, "new.py"))
             self.refresh()
         except Exception as exc:
             self.msg = "Editor " + str(exc)[:10]
@@ -254,8 +370,8 @@ class Browser:
             pyperm.remove(path); self.msg = "Deleted"; self.refresh()
         except OSError as exc: self.msg = "Delete " + str(exc)[:12]
 
-    def permission_menu(self):
-        path = self.selected_path()
+    def permission_menu(self, path=None):
+        path = path or self.selected_path()
         if not path:
             self.msg = "Select item"; return
         current = pyperm.get_mode(path)
@@ -272,8 +388,8 @@ class Browser:
             pyperm.chmod(path, mode); self.msg = "chmod " + mode
         except Exception as exc: self.msg = "chmod " + str(exc)[:12]
 
-    def compress_selected(self):
-        path = self.selected_path()
+    def compress_selected(self, path=None):
+        path = path or self.selected_path()
         if not path: self.msg = "Select item"; return
         import zipfile
         default = _basename(path.rstrip("/")) + ".zip"
@@ -287,8 +403,8 @@ class Browser:
         except Exception as exc:
             print("ZIP error:", repr(exc)); self.msg = "ZIP error"
 
-    def extract_selected(self):
-        path = self.selected_path()
+    def extract_selected(self, path=None):
+        path = path or self.selected_path()
         if not path or not path.lower().endswith(".zip"): self.msg = "Select .zip"; return
         import zipfile
         default = _basename(path)[:-4] or "unzipped"
@@ -302,9 +418,13 @@ class Browser:
 
     def more_menu(self):
         choice = self.popup("More", (
-            "Up one folder", "Permissions", "Compress to ZIP", "Extract ZIP", "Theme",
+            "File information", "Up one folder", "Permissions", "Compress to ZIP", "Extract ZIP", "Theme",
             "PythonUltra Info", "Refresh", "Exit Files"))
-        if choice == "Up one folder":
+        if choice == "File information":
+            path = self.selected_path()
+            if path and not _is_dir(path): self.file_info(path)
+            else: self.msg = "Select file"
+        elif choice == "Up one folder":
             self.folder = _parent(self.folder); self.selected = self.scroll = 0; self.refresh()
         elif choice == "Permissions": self.permission_menu()
         elif choice == "Compress to ZIP": self.compress_selected()
