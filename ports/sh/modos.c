@@ -3,9 +3,10 @@
 //.-'`_ o `;__,   A community port of MicroPython for CASIO calculators.     //
 //.-'` `---`  '   License: MIT (except some files; see LICENSE)              //
 //---------------------------------------------------------------------------//
-// pe.modos: Small POSIX-backed os module for the calculator filesystem.
+// pe.modos: Small filesystem module with PythonUltra virtual cwd support.
 
 #include "py/runtime.h"
+#include "pathutil.h"
 
 #include <dirent.h>
 #include <errno.h>
@@ -20,26 +21,35 @@ static void pe_os_check(int result)
         mp_raise_OSError(errno);
 }
 
+static char const *pe_os_path(mp_obj_t path_in, char *buffer, size_t size)
+{
+    char const *path = mp_obj_str_get_str(path_in);
+    if(pe_path_resolve(path, buffer, size) < 0)
+        mp_raise_OSError(errno);
+    return buffer;
+}
+
 static mp_obj_t pe_os_getcwd(void)
 {
-    char buffer[256];
-    if(!getcwd(buffer, sizeof buffer))
-        mp_raise_OSError(errno);
-    return mp_obj_new_str(buffer, strlen(buffer));
+    char const *cwd = pe_path_getcwd();
+    return mp_obj_new_str(cwd, strlen(cwd));
 }
 MP_DEFINE_CONST_FUN_OBJ_0(pe_os_getcwd_obj, pe_os_getcwd);
 
 static mp_obj_t pe_os_chdir(mp_obj_t path_in)
 {
-    pe_os_check(chdir(mp_obj_str_get_str(path_in)));
+    pe_os_check(pe_path_chdir(mp_obj_str_get_str(path_in)));
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_1(pe_os_chdir_obj, pe_os_chdir);
 
 static mp_obj_t pe_os_listdir(size_t n_args, const mp_obj_t *args)
 {
-    char const *path = n_args ? mp_obj_str_get_str(args[0]) : ".";
-    DIR *dir = opendir(path);
+    char resolved[PE_PATH_MAX];
+    char const *input = n_args ? mp_obj_str_get_str(args[0]) : ".";
+    if(pe_path_resolve(input, resolved, sizeof resolved) < 0)
+        mp_raise_OSError(errno);
+    DIR *dir = opendir(resolved);
     if(!dir)
         mp_raise_OSError(errno);
 
@@ -61,38 +71,48 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(pe_os_listdir_obj, 0, 1, pe_os_listdir);
 
 static mp_obj_t pe_os_mkdir(size_t n_args, const mp_obj_t *args)
 {
+    char path[PE_PATH_MAX];
     mode_t mode = n_args > 1 ? mp_obj_get_int(args[1]) : 0777;
-    pe_os_check(mkdir(mp_obj_str_get_str(args[0]), mode));
+    pe_os_path(args[0], path, sizeof path);
+    pe_os_check(mkdir(path, mode));
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(pe_os_mkdir_obj, 1, 2, pe_os_mkdir);
 
 static mp_obj_t pe_os_remove(mp_obj_t path_in)
 {
-    pe_os_check(remove(mp_obj_str_get_str(path_in)));
+    char path[PE_PATH_MAX];
+    pe_os_path(path_in, path, sizeof path);
+    pe_os_check(remove(path));
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_1(pe_os_remove_obj, pe_os_remove);
 
 static mp_obj_t pe_os_rename(mp_obj_t old_in, mp_obj_t new_in)
 {
-    pe_os_check(rename(
-        mp_obj_str_get_str(old_in), mp_obj_str_get_str(new_in)));
+    char old_path[PE_PATH_MAX], new_path[PE_PATH_MAX];
+    pe_os_path(old_in, old_path, sizeof old_path);
+    pe_os_path(new_in, new_path, sizeof new_path);
+    pe_os_check(rename(old_path, new_path));
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(pe_os_rename_obj, pe_os_rename);
 
 static mp_obj_t pe_os_rmdir(mp_obj_t path_in)
 {
-    pe_os_check(rmdir(mp_obj_str_get_str(path_in)));
+    char path[PE_PATH_MAX];
+    pe_os_path(path_in, path, sizeof path);
+    pe_os_check(rmdir(path));
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_1(pe_os_rmdir_obj, pe_os_rmdir);
 
 static mp_obj_t pe_os_stat(mp_obj_t path_in)
 {
+    char path[PE_PATH_MAX];
     struct stat st;
-    pe_os_check(stat(mp_obj_str_get_str(path_in), &st));
+    pe_os_path(path_in, path, sizeof path);
+    pe_os_check(stat(path, &st));
 
     mp_obj_t fields[] = {
         mp_obj_new_int_from_uint(st.st_mode),
