@@ -113,6 +113,24 @@ class PygameCompatTests(unittest.TestCase):
         pygame.draw.circle(target, "blue", (4, 4), 2)
         pygame.draw.polygon(target, "white", [(0, 0), (3, 0), (1, 3)])
 
+    def test_screen_blit_honors_colorkey_on_image_backed_surface(self):
+        screen = pygame.display.set_mode((396, 224))
+        source = pygame.Surface((2, 1))
+        source.set_at((0, 0), (0, 0, 0))
+        source.set_at((1, 0), (255, 0, 0))
+        source._image = FAKE_GINT.image_rgb565(2, 1, source._data)
+        source.set_colorkey((0, 0, 0))
+
+        FAKE_GINT.calls[:] = []
+        screen.blit(source, (10, 20))
+
+        call_names = [item[0] for item in FAKE_GINT.calls]
+        self.assertNotIn("image", call_names)
+        self.assertNotIn("subimage", call_names)
+        pixel_calls = [item for item in FAKE_GINT.calls if item[0] == "pixel"]
+        self.assertEqual(len(pixel_calls), 1)
+        self.assertEqual(pixel_calls[0][1:3], (11, 20))
+
     def test_events_and_pressed_keys(self):
         posted = pygame.event.Event(pygame.USEREVENT, answer=42)
         pygame.event.post(posted)
