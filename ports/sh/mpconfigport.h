@@ -78,7 +78,11 @@ extern const struct _mp_print_t mp_debug_print;
 
 /* Extra built-in modules */
 #define MICROPY_PY_ARRAY                  (1)
+#define MICROPY_PY_BINASCII               (1)
+#define MICROPY_PY_BINASCII_CRC32         (1)
 #define MICROPY_PY_COLLECTIONS            (1)
+#define MICROPY_PY_DEFLATE                (1)
+#define MICROPY_PY_DEFLATE_COMPRESS       (1)
 #define MICROPY_PY_MATH                   (1)
 #define MICROPY_PY_CMATH                  (1)
 #define MICROPY_PY_GC                     (1)
