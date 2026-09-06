@@ -16,7 +16,7 @@ Collaboration:
 - Based on PythonExtra by Lephenixnoir, SlyVTT and Planete Casio contributors
 
 ============================================================
-2. MAIN F-KEYS
+2. MAIN F-KEYS AND SHELL KEYS
 ============================================================
 F1  FILES     Open PythonUltra Files
 F2  SHELL     Return to the terminal/shell
@@ -25,11 +25,19 @@ F4  THEME     Toggle light/dark shell theme
 F5  EDITOR    Open a new text file in the PythonUltra editor
 F6  INFO      Build/collaboration information
 
-Shell command history:
+Shell command history and scrolling:
 UP          previous command
 DOWN        next command
 SHIFT+UP    scroll shell output up
 SHIFT+DOWN  scroll shell output down
+
+Programming symbols:
+SHIFT+DEL opens the programming-symbol picker. Selecting a character inserts
+it at the current command-line cursor position.
+
+The palette includes common Python/shell punctuation and operators such as:
+  '  "  :  ;  ,  -  .  @  #  $  %  ^  &  *  !  ?  ~  `
+  <  >  =  +  /  \  |  _  (  )  [  ]  {  }
 
 ============================================================
 3. TERMINAL MODE
@@ -38,8 +46,9 @@ PythonUltra starts in a Linux-like terminal mode. This is a compact calculator
 command environment, not a full GNU/Linux shell.
 
 Available commands:
-help man ls cd pwd mkdir touch rm rmdir mv cp cat echo clear
-python zip unzip edit files modules info version
+help man ls cd pwd mkdir touch rm rmdir mv cp cat echo clear chmod
+python zip unzip edit files modules info version alias unalias source
+history font theme rc
 
 Examples:
   pwd
@@ -52,6 +61,13 @@ Examples:
   mv old.txt new.txt
   cp game.py game_backup.py
   cat notes.txt
+  chmod 444 notes.txt
+  chmod 755 hello.py
+  alias ll='ls -l'
+  history 10
+  font small
+  theme dark
+  rc edit
   rm notes.txt
   rmdir empty_folder
   clear
@@ -60,12 +76,28 @@ Built-in manual/help:
   help
   help python
   man python
+  man chmod
   python -h
   python --help
   ls -h
   ls --help
   zip -h
   zip --help
+
+PythonUltra maintains its own working directory for terminal commands, so cd
+and pwd behave like a shell even though the calculator OS is not GNU/Linux.
+
+Terminal configuration is stored in:
+  /.pythonultrarc
+
+Persistent command history is stored in:
+  /.pythonultra_history
+
+Example RC entries:
+  set theme=dark
+  set font=normal
+  cd /games
+  alias ll='ls -l'
 
 ============================================================
 4. PYTHON FROM THE TERMINAL
@@ -101,8 +133,12 @@ Show PythonUltra's Python command help instead:
 Run code directly:
   python -c "print(2+2)"
 
+PythonUltra permissions distinguish interpreter execution from direct
+execution. Running `python file.py` requires read permission. Direct execution
+with `./file.py` additionally requires execute permission.
+
 ============================================================
-5. FILES
+5. FILES AND PERMISSIONS
 ============================================================
 PythonUltra Files is a graphical file manager with dark/light themes.
 
@@ -117,11 +153,20 @@ Functions include:
 - remove empty folders
 - ZIP compression
 - ZIP extraction
+- view/change PythonUltra rwx permissions
 
 Useful file types include:
 .py .txt .csv .json .md and other plain-text formats.
 
 For a Python file, choose Run or Edit. Ordinary text files open in the editor.
+
+PythonUltra implements a calculator-side rwx permission layer. It is enforced
+by PythonUltra rather than by Casio OS itself.
+
+Examples:
+  chmod 444 file.txt
+  chmod 644 notes.txt
+  chmod 755 hello.py
 
 ============================================================
 6. EDITOR
@@ -139,6 +184,8 @@ Primary editor functions:
 - run Python code from the editor
 - PythonUltra catalog access while editing
 - multiple syntax-highlighting themes
+- small/normal/large editor font controls
+- programming-symbol picker with SHIFT+DEL
 
 Editor themes include:
 - GitHub Dark
@@ -149,6 +196,10 @@ Editor themes include:
 
 Theme colors cover the editor background, normal text, selection, keywords,
 built-ins, numbers, strings, comments, decorators, operators and module names.
+
+The current development build also generates calculator raster-font assets
+from a pinned JetBrains Mono source during the build. The source font itself is
+not bundled as a downloadable project artifact.
 
 ============================================================
 7. ZIP / UNZIP
@@ -292,11 +343,20 @@ F3 opens the graphical module/method catalog.
 F6 opens build and collaboration information.
 
 ============================================================
-13. DARK MODE
+13. THEMES AND FONTS
 ============================================================
 F4 toggles the main shell theme.
 PythonUltra Files and the editor also support dark/light palettes.
 The editor provides additional syntax themes listed above.
+
+Terminal font commands:
+  font small
+  font normal
+  font large
+
+Persistent configuration can be placed in /.pythonultrarc, for example:
+  set theme=dark
+  set font=normal
 
 ============================================================
 14. HARDWARE TEST CHECKLIST
@@ -320,28 +380,43 @@ B. Terminal
   cd ..
   rmdir testdir   (only after removing contained files)
 
-C. Python arguments
+C. Permissions and execution
+  touch perm_test.txt
+  chmod 444 perm_test.txt
+  ls -l perm_test.txt
+  chmod 644 perm_test.txt
+
+D. Python arguments
   create argv_test.py containing:
     import sys
     print(sys.argv)
   then run:
     python argv_test.py one two
 
-D. UI
+E. UI / fonts / symbols
   F3 Catalog
   F4 Theme
   F5 Editor
   F6 Info
   UP/DOWN command history
+  font small / normal / large
+  SHIFT+DEL symbol picker
+  insert: ' " : ; , - . @ # ( ) [ ] { }
 
-E. Files
+F. RC and history
+  history 10
+  rc show
+  alias ll='ls -l'
+  source /.pythonultrarc
+
+G. Files
   create .py and .txt files
   edit them
   rename them
   delete them
   create/remove a folder
 
-F. ZIP
+H. ZIP
   create a small folder/file
   zip test.zip source
   unzip test.zip extracted
