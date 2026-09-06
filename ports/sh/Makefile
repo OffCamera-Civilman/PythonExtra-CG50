@@ -25,6 +25,7 @@ SRC_C = \
     ports/sh/fdfile.c \
     ports/sh/keymap.c \
     ports/sh/libc_compat.c \
+    ports/sh/pathutil.c \
     ports/sh/modcasioplot.c \
     ports/sh/modctypes.c \
     ports/sh/modgint.c \
