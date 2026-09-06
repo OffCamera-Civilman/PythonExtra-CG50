@@ -1,5 +1,6 @@
 #include "pathutil.h"
 
+#include <gint/gint.h>
 #include <errno.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -86,7 +87,7 @@ int pe_path_chdir(char const *path)
     struct stat st;
     if(pe_path_resolve(path, resolved, sizeof resolved) < 0)
         return -1;
-    if(stat(resolved, &st) < 0)
+    if((int)gint_world_switch(GINT_CALL(stat, resolved, &st)) < 0)
         return -1;
     if((st.st_mode & S_IFMT) != S_IFDIR) {
         errno = ENOTDIR;
