@@ -18,14 +18,55 @@
 #include <unistd.h>
 
 /*
- * fx-CG50 storage is handled by the OS.  Filesystem calls must cross a gint
- * world switch, just like fdfile.c already does for open/read/write.  Calling
- * these directly can leave the calculator in an unsafe OS state and has been
- * observed on hardware as OSError 8, black screens and resets.
+ * fx-CG50 storage is handled by the OS. Filesystem calls must cross a gint
+ * world switch, just like fdfile.c already does for open/read/write.
+ * GINT_CALL only accepts register-sized primitive/pointer arguments, so
+ * structure pointers are passed as void * through small int-returning ABI
+ * adapters. Pointer-returning libc calls are converted through uintptr_t.
  */
+static int pe_ws_opendir(void *path_in)
+{
+    return (int)(uintptr_t)opendir((char const *)path_in);
+}
+
+static int pe_ws_readdir(void *dir_in)
+{
+    return (int)(uintptr_t)readdir((DIR *)dir_in);
+}
+
+static int pe_ws_closedir(void *dir_in)
+{
+    return closedir((DIR *)dir_in);
+}
+
+static int pe_ws_mkdir(void *path_in, int mode)
+{
+    return mkdir((char const *)path_in, (mode_t)mode);
+}
+
+static int pe_ws_remove(void *path_in)
+{
+    return remove((char const *)path_in);
+}
+
+static int pe_ws_rename(void *old_in, void *new_in)
+{
+    return rename((char const *)old_in, (char const *)new_in);
+}
+
+static int pe_ws_rmdir(void *path_in)
+{
+    return rmdir((char const *)path_in);
+}
+
+static int pe_ws_stat(void *path_in, void *stat_out)
+{
+    return stat((char const *)path_in, (struct stat *)stat_out);
+}
+
 static int pe_os_world_int(gint_call_t call)
 {
-    return (int)gint_world_switch(call);
+    return gint_world_switch(call);
 }
 
 static void pe_os_check(int result)
@@ -63,14 +104,15 @@ static mp_obj_t pe_os_listdir(size_t n_args, const mp_obj_t *args)
     if(pe_path_resolve(input, resolved, sizeof resolved) < 0)
         mp_raise_OSError(errno);
 
-    DIR *dir = (DIR *)(uintptr_t)gint_world_switch(GINT_CALL(opendir, resolved));
+    DIR *dir = (DIR *)(uintptr_t)pe_os_world_int(
+        GINT_CALL(pe_ws_opendir, (void *)resolved));
     if(!dir)
         mp_raise_OSError(errno);
 
     mp_obj_t list = mp_obj_new_list(0, NULL);
     while(1) {
-        struct dirent *entry = (struct dirent *)(uintptr_t)
-            gint_world_switch(GINT_CALL(readdir, dir));
+        struct dirent *entry = (struct dirent *)(uintptr_t)pe_os_world_int(
+            GINT_CALL(pe_ws_readdir, (void *)dir));
         if(!entry)
             break;
         if(!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
@@ -79,7 +121,7 @@ static mp_obj_t pe_os_listdir(size_t n_args, const mp_obj_t *args)
             mp_obj_new_str(entry->d_name, strlen(entry->d_name)));
     }
 
-    pe_os_check(pe_os_world_int(GINT_CALL(closedir, dir)));
+    pe_os_check(pe_os_world_int(GINT_CALL(pe_ws_closedir, (void *)dir)));
     return list;
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(pe_os_listdir_obj, 0, 1, pe_os_listdir);
@@ -89,7 +131,8 @@ static mp_obj_t pe_os_mkdir(size_t n_args, const mp_obj_t *args)
     char path[PE_PATH_MAX];
     mode_t mode = n_args > 1 ? mp_obj_get_int(args[1]) : 0777;
     pe_os_path(args[0], path, sizeof path);
-    pe_os_check(pe_os_world_int(GINT_CALL(mkdir, path, mode)));
+    pe_os_check(pe_os_world_int(
+        GINT_CALL(pe_ws_mkdir, (void *)path, (int)mode)));
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(pe_os_mkdir_obj, 1, 2, pe_os_mkdir);
@@ -98,7 +141,7 @@ static mp_obj_t pe_os_remove(mp_obj_t path_in)
 {
     char path[PE_PATH_MAX];
     pe_os_path(path_in, path, sizeof path);
-    pe_os_check(pe_os_world_int(GINT_CALL(remove, path)));
+    pe_os_check(pe_os_world_int(GINT_CALL(pe_ws_remove, (void *)path)));
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_1(pe_os_remove_obj, pe_os_remove);
@@ -108,7 +151,8 @@ static mp_obj_t pe_os_rename(mp_obj_t old_in, mp_obj_t new_in)
     char old_path[PE_PATH_MAX], new_path[PE_PATH_MAX];
     pe_os_path(old_in, old_path, sizeof old_path);
     pe_os_path(new_in, new_path, sizeof new_path);
-    pe_os_check(pe_os_world_int(GINT_CALL(rename, old_path, new_path)));
+    pe_os_check(pe_os_world_int(GINT_CALL(pe_ws_rename,
+        (void *)old_path, (void *)new_path)));
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(pe_os_rename_obj, pe_os_rename);
@@ -117,7 +161,7 @@ static mp_obj_t pe_os_rmdir(mp_obj_t path_in)
 {
     char path[PE_PATH_MAX];
     pe_os_path(path_in, path, sizeof path);
-    pe_os_check(pe_os_world_int(GINT_CALL(rmdir, path)));
+    pe_os_check(pe_os_world_int(GINT_CALL(pe_ws_rmdir, (void *)path)));
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_1(pe_os_rmdir_obj, pe_os_rmdir);
@@ -127,7 +171,8 @@ static mp_obj_t pe_os_stat(mp_obj_t path_in)
     char path[PE_PATH_MAX];
     struct stat st;
     pe_os_path(path_in, path, sizeof path);
-    pe_os_check(pe_os_world_int(GINT_CALL(stat, path, &st)));
+    pe_os_check(pe_os_world_int(GINT_CALL(pe_ws_stat,
+        (void *)path, (void *)&st)));
 
     mp_obj_t fields[] = {
         mp_obj_new_int_from_uint(st.st_mode),
