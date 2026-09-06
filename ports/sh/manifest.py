@@ -2,3 +2,4 @@
 freeze("modules", "pygame", opt=3)
 freeze("modules", "numpy", opt=3)
 freeze("modules", "py3d", opt=3)
+freeze("modules", "pythonultra", opt=3)
