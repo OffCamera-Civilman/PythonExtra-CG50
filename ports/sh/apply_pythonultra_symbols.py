@@ -7,6 +7,7 @@ MAIN = ROOT / "main.c"
 WIDGET_C = ROOT / "widget_shell.c"
 WIDGET_H = ROOT / "widget_shell.h"
 PYULTRA = ROOT / "modules" / "pythonultra" / "__init__.py"
+PYTERM = ROOT / "modules" / "pyterm" / "__init__.py"
 
 
 def replace_once(text, old, new, label):
@@ -39,6 +40,18 @@ def patch_python_ui():
             '''def catalog_ui(dark=False):\n''',
             '''def symbol_ui(dark=False):\n    """Open the SHIFT+DEL programming-symbol picker and return one character."""\n    return popup("Programming Symbols", _PROGRAMMING_SYMBOLS, dark)\n\n\ndef catalog_ui(dark=False):\n''',
             "symbol UI helper",
+        ),
+    ])
+
+
+def patch_terminal_help():
+    # On hardware a frozen '-' QSTR can render as the internal name _hyphen_.
+    # Construct the manual rule from ASCII 45 at runtime instead.
+    return patch(PYTERM, [
+        (
+            '''    print("-" * 30)\n''',
+            '''    print(chr(45) * 30)\n''',
+            "terminal manual separator",
         ),
     ])
 
@@ -79,6 +92,7 @@ def patch_main():
 def main():
     changed = []
     if patch_python_ui(): changed.append("catalog")
+    if patch_terminal_help(): changed.append("manual")
     if patch_widget(): changed.append("widget")
     if patch_main(): changed.append("native")
     print("PythonUltra symbols: " + (", ".join(changed) if changed else "already applied"))
