@@ -48,7 +48,7 @@ assert 'freeze("modules", "pyeditor", opt=3)' in manifest
 assert 'freeze("modules", "pyfiles", opt=3)' in manifest
 assert 'freeze("modules", "pyterm", opt=3)' in manifest
 assert 'freeze("modules", "zipfile", opt=3)' in manifest
-assert "python--h" in pyterm and "def dispatch(" in pyterm
+assert 'endswith("--h")' in pyterm and "def dispatch(" in pyterm
 assert "zip" in pyterm and "unzip" in pyterm
 assert "create_new" in pyfiles and "rename_selected" in pyfiles and "delete_selected" in pyfiles
 assert "GitHub Dark" in pyeditor and "GitHub Light" in pyeditor and "Linux" in pyeditor
