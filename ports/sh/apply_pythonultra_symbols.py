@@ -32,7 +32,7 @@ def patch_python_ui():
     return patch(PYULTRA, [
         (
             '''\n\ndef modules():\n''',
-            '''\n\n# Common ASCII characters used in Python, shell commands, paths, expressions,\n# data formats and general programming. SHIFT+DEL opens this list in Terminal.\n_PROGRAMMING_SYMBOLS = (\n    "@", "#", "$", "%", "^", "&", "*", "!", "?", "~", "`",\n    "<", ">", "=", "+", "-", "/", "\\\\", "|", "_",\n    "(", ")", "[", "]", "{", "}", "'", '\"', ":", ";", ",", ".",\n)\n\n\ndef modules():\n''',
+            '''\n\n# Common ASCII characters used in Python, shell commands, paths, expressions,\n# data formats and general programming. Build them at runtime because frozen\n# punctuation QSTRs can surface as names such as _hyphen_ on calculator hardware.\n_PROGRAMMING_SYMBOL_CODES = (\n    64, 35, 36, 37, 94, 38, 42, 33, 63, 126, 96,\n    60, 62, 61, 43, 45, 47, 92, 124, 95,\n    40, 41, 91, 93, 123, 125, 39, 34, 58, 59, 44, 46,\n)\n_PROGRAMMING_SYMBOLS = tuple(chr(code) for code in _PROGRAMMING_SYMBOL_CODES)\n\n\ndef modules():\n''',
             "programming symbol list",
         ),
         (
