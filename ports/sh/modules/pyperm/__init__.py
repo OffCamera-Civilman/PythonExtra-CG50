@@ -7,7 +7,7 @@ own terminal, editor, file manager and direct script launcher.
 
 import os
 
-__version__ = "0.1.0-cg50"
+__version__ = "0.1.1-cg50"
 DB_PATH = "/.pythonultra_permissions"
 DEFAULT_FILE_MODE = 0o666
 DEFAULT_DIR_MODE = 0o777
@@ -145,7 +145,6 @@ def _has(path, mask):
 
 
 def readable(path):
-    # Any user/group/other read bit counts in PythonUltra's single-user model.
     return _has(path, 0o444)
 
 
@@ -159,19 +158,19 @@ def executable(path):
 
 def require_read(path):
     if not readable(path):
-        raise PermissionError("Permission denied (read): " + abspath(path))
+        raise OSError("Permission denied (read): " + abspath(path))
     return True
 
 
 def require_write(path):
     if not writable(path):
-        raise PermissionError("Permission denied (write): " + abspath(path))
+        raise OSError("Permission denied (write): " + abspath(path))
     return True
 
 
 def require_execute(path):
     if not executable(path):
-        raise PermissionError("Permission denied (execute): " + abspath(path))
+        raise OSError("Permission denied (execute): " + abspath(path))
     return True
 
 
