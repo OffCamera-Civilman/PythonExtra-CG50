@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------------//
-//    ____        PythonExtra                                                //
+//    ____        PythonUltra                                                //
 //.-'`_ o `;__,   A community port of MicroPython for CASIO calculators.     //
 //.-'` `---`  '   License: MIT (except some files; see LICENSE)              //
 //---------------------------------------------------------------------------//
@@ -19,6 +19,22 @@ static void pe_os_check(int result)
     if(result < 0)
         mp_raise_OSError(errno);
 }
+
+static mp_obj_t pe_os_getcwd(void)
+{
+    char buffer[256];
+    if(!getcwd(buffer, sizeof buffer))
+        mp_raise_OSError(errno);
+    return mp_obj_new_str(buffer, strlen(buffer));
+}
+MP_DEFINE_CONST_FUN_OBJ_0(pe_os_getcwd_obj, pe_os_getcwd);
+
+static mp_obj_t pe_os_chdir(mp_obj_t path_in)
+{
+    pe_os_check(chdir(mp_obj_str_get_str(path_in)));
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(pe_os_chdir_obj, pe_os_chdir);
 
 static mp_obj_t pe_os_listdir(size_t n_args, const mp_obj_t *args)
 {
@@ -97,6 +113,8 @@ MP_DEFINE_CONST_FUN_OBJ_1(pe_os_stat_obj, pe_os_stat);
 static const mp_rom_map_elem_t pe_os_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_os) },
     { MP_ROM_QSTR(MP_QSTR_sep), MP_ROM_QSTR(MP_QSTR__slash_) },
+    { MP_ROM_QSTR(MP_QSTR_getcwd), MP_ROM_PTR(&pe_os_getcwd_obj) },
+    { MP_ROM_QSTR(MP_QSTR_chdir), MP_ROM_PTR(&pe_os_chdir_obj) },
     { MP_ROM_QSTR(MP_QSTR_listdir), MP_ROM_PTR(&pe_os_listdir_obj) },
     { MP_ROM_QSTR(MP_QSTR_mkdir), MP_ROM_PTR(&pe_os_mkdir_obj) },
     { MP_ROM_QSTR(MP_QSTR_remove), MP_ROM_PTR(&pe_os_remove_obj) },
