@@ -1,0 +1,454 @@
+PYTHONULTRA FOR CASIO fx-CG50
+USER GUIDE / FEATURE REFERENCE
+========================================
+
+PROJECT
+-------
+PythonUltra is a community calculator Python environment based on PythonExtra
+and MicroPython, using gint and JustUI on the Casio fx-CG50.
+
+PythonUltra development is a co-collaboration between the
+OffCamera-Civilman project and Brandon (@brandonendall), building on work by
+Lephenixnoir, SlyVTT, MicroPython, gint, JustUI and Planete Casio contributors.
+
+The build includes compatibility work for both older and newer fx-CG50 display
+hardware.
+
+
+MAIN F-KEYS
+-----------
+F1  FILES    Enhanced graphical file manager
+F2  SHELL    Return to terminal/Python shell
+F3  CATALOG  Modal PythonUltra module/method catalog
+F4  THEME    Toggle shell light/dark mode
+F5  EDITOR   Open a new text file in PythonUltra Editor
+F6  INFO     Build, project and collaboration information
+
+In the shell/terminal:
+UP / DOWN        recall previous/next command
+SHIFT+UP/DOWN    scroll terminal output
+
+
+PYTHONULTRA TERMINAL
+--------------------
+PythonUltra starts in a Linux-style terminal mode instead of immediately
+forcing every line to be Python code.
+
+Prompt example:
+    PU:/$
+
+Built-in commands:
+    help man ls cd pwd mkdir touch rm rmdir mv cp cat echo clear
+    python zip unzip edit files modules info version
+
+Get help:
+    help
+    help python
+    man python
+    python -h
+    python --help
+    python--h
+
+Most terminal commands also accept:
+    command -h
+    command --help
+
+The manual pages show NAME, SYNOPSIS, options and examples.
+
+
+COMMON TERMINAL COMMANDS
+------------------------
+List files:
+    ls
+    ls games
+    ls -l
+
+Change directory:
+    cd games
+    cd ..
+    cd /
+
+Show current directory:
+    pwd
+
+Create folders:
+    mkdir games
+    mkdir -p games/demo/assets
+
+Create an empty file:
+    touch notes.txt
+    touch game.py
+
+Remove a file:
+    rm old.txt
+
+Remove an empty folder:
+    rmdir old_folder
+
+Rename/move:
+    mv old.py new.py
+
+Copy a file:
+    cp game.py game_backup.py
+
+Display a text file:
+    cat notes.txt
+
+Print text:
+    echo Hello PythonUltra
+
+Clear terminal scrollback:
+    clear
+
+Open graphical Files:
+    files
+    files /
+
+Open editor directly:
+    edit notes.txt
+
+Open module catalog:
+    modules
+
+Show build information:
+    info
+
+Show versions:
+    version
+
+
+PYTHON COMMAND / REPL
+---------------------
+Enter interactive Python:
+    python
+
+The prompt then becomes the normal Python REPL prompt.
+To return to terminal mode, type:
+    exit
+or:
+    exit()
+
+Run a script:
+    python hello.py
+
+Run a script with arguments:
+    python hello.py Brandon 42
+
+Inside hello.py:
+    import sys
+    print(sys.argv)
+
+The result will contain approximately:
+    ['hello.py', 'Brandon', '42']
+
+Run code directly:
+    python -c "print(2+2)"
+
+Python command help:
+    python -h
+    python --help
+    python--h
+
+IMPORTANT ARGUMENT RULE:
+    python hello.py -h
+passes -h TO hello.py through sys.argv. It does not open PythonUltra's Python
+help because the script name came first.
+
+The clear command also works while in the Python REPL.
+
+
+FILES - GRAPHICAL FILE MANAGER
+------------------------------
+F1  Run selected .py file
+F2  Edit selected text file
+F3  New file or new folder
+F4  Rename selected item
+F5  Delete selected item (with confirmation)
+F6  More menu
+
+EXE / RIGHT:
+- folder: enter folder
+- .py file: choose Run or Edit
+- .zip file: choose Extract ZIP
+- text file: open editor
+
+LEFT / EXIT:
+- move up one folder
+- EXIT at root leaves Files
+
+New files are NOT limited to Python files. Type the filename and extension you
+want, for example:
+    program.py
+    notes.txt
+    data.csv
+    config.json
+    README.md
+    settings.ini
+
+Known text types open directly. Unknown/binary types ask before opening as text.
+
+The More menu includes:
+    Up one folder
+    Compress to ZIP
+    Extract ZIP
+    Theme
+    PythonUltra Info
+    Refresh
+    Exit Files
+
+Files supports the same light/dark visual family used by PythonUltra.
+
+
+ZIP / UNZIP
+-----------
+PythonUltra includes a compact standard ZIP implementation backed by
+MicroPython's DEFLATE engine.
+
+Terminal:
+    zip archive.zip source
+    unzip archive.zip
+    unzip archive.zip destination
+
+Examples:
+    zip mygame.zip mygame
+    zip notes.zip notes.txt
+    unzip mygame.zip mygame_copy
+
+Files GUI:
+1. Highlight a file or folder.
+2. Press F6 (More).
+3. Choose Compress to ZIP.
+4. Enter the archive name.
+
+To extract:
+1. Highlight a .zip file.
+2. Press EXE and choose Extract ZIP,
+   or F6 > Extract ZIP.
+3. Enter the destination folder.
+
+Supported:
+- stored ZIP entries
+- DEFLATE-compressed entries
+- files and folders
+- CRC integrity checking
+- safe extraction that rejects ../ path traversal
+
+Not supported:
+- encrypted ZIP files
+- ZIP64
+- multi-disk ZIP archives
+
+
+PYTHONULTRA EDITOR
+------------------
+The integrated editor is based on the project's PyEditorRC concept, refactored
+for PythonUltra and the fx-CG50.
+
+Editor F-keys:
+F1  Run (Python files)
+F2  Save
+F3  New
+F4  Open
+F5  Find
+F6  Syntax theme
+
+Navigation:
+Arrow keys     move cursor
+OPTN           toggle NORMAL / INSERT mode
+EXE            create newline / enter insertion
+DEL            backspace in INSERT mode
+EXIT           leave editor (unsaved changes require confirmation)
+
+Selection/clipboard:
+SHIFT+8        begin VISUAL selection
+OPTN           copy selection while in VISUAL mode
+DEL            cut selection while in VISUAL mode
+SHIFT+9        paste clipboard
+
+Extra editor tools:
+SHIFT+4        open curated PythonUltra module catalog and insert a name
+SHIFT+DEL      symbol popup
+
+The editor automatically indents after a line ending in ':'.
+
+Supported syntax-highlighting themes:
+- GitHub Dark
+- GitHub Light
+- Linux Terminal
+- PythonUltra Dark
+- PythonUltra Light
+
+Highlighting distinguishes Python keywords, built-ins, numbers, strings,
+comments, decorators, types, modules and operators.
+
+The editor can edit ordinary text files as well as Python source.
+
+
+F3 MODULE CATALOG
+-----------------
+F3 opens a real modal catalog browser rather than dumping a long list into the
+shell.
+
+1. Choose a module.
+2. Press EXE/RIGHT.
+3. Browse the useful public functions/classes/methods.
+4. EXIT/LEFT backs out.
+
+The catalog intentionally hides internal/private implementation names where
+possible so calculator users see the functions they can actually use.
+
+Catalog coverage includes PythonUltra modules such as:
+    numpy pygame py3d gint ctypes os json time math random sys
+    zipfile deflate pyterm pyeditor pyfiles casioplot kandinsky ion
+
+
+F6 BUILD INFO
+-------------
+F6 opens a modal information panel showing:
+- PythonUltra name
+- build identifier
+- MicroPython/gint/JustUI foundation
+- PythonExtra ancestry
+- OffCamera-Civilman + Brandon co-collaboration
+- @brandonendall
+- upstream/community contributor acknowledgement
+- key compatibility/features in the build
+
+
+NUMPY / MATRIX SUPPORT
+----------------------
+PythonUltra uses a calculator-sized NumPy compatibility package. The native
+accelerator is private (_numpy_fast) so it no longer shadows the Python package.
+
+Example:
+    import numpy as np
+
+    m = np.matrix([[1, 2], [3, 4]])
+    print(m)
+    print(m.T)
+    print(m.I)
+
+Aliases/helpers include:
+    np.matrix
+    np.mat
+    np.asarray
+    np.asmatrix
+    np.dot
+    np.cross
+    np.norm
+    np.normalize
+    np.lerp
+    np.matmul
+
+Matrix functionality includes transpose, inverse, multiplication and matrix
+power support in the compact implementation.
+
+This is NOT full desktop NumPy. It is designed for fx-CG50 memory and CPU limits.
+
+
+PYGAME
+------
+PythonUltra contains a compact calculator-focused Pygame compatibility layer.
+It includes display/surfaces, Rect, drawing, key events, timing, fonts, image
+loading, transforms and sprite/group helpers needed for lightweight games.
+
+Calculator image guidance:
+- keep loaded game images at or below 56x56 pixels
+- large full-screen Surface allocations can exhaust contiguous MicroPython heap
+
+No desktop SDL audio/network stack is included.
+
+
+PY3D
+----
+PythonUltra includes a compact software 3D layer using native gint.dtriangle.
+Current features include vectors, 4x4 matrices, transforms, perspective
+projection, RGB565 shading, back-face culling, painter sorting, cube meshes and
+a Renderer helper.
+
+This is a calculator software renderer, not OpenGL/GPU acceleration.
+
+
+CTYPES
+------
+PythonUltra includes a deliberately safe calculator-sized ctypes compatibility
+layer with common scalar wrappers, managed byte buffers and allowlisted calls.
+It does not expose unrestricted arbitrary-address memory access.
+
+
+OS / FILESYSTEM
+---------------
+The calculator os module includes:
+    getcwd chdir listdir mkdir remove unlink rename rmdir stat sep
+
+Terminal cd changes the real working directory used by following terminal
+commands and Python scripts.
+
+
+COMMAND HISTORY
+---------------
+The shell remembers recent entered commands.
+
+UP      older command
+DOWN    newer command
+
+This avoids retyping long Python or terminal commands.
+SHIFT+UP/DOWN remains available for output scrolling.
+
+
+DARK MODE / THEMES
+------------------
+The shell supports dark/light mode through F4.
+The graphical Files application supports themed backgrounds.
+The editor has five syntax themes, including GitHub Dark/Light and Linux
+Terminal.
+The PythonUltra G3A app icon uses a black outer background.
+
+
+HELP
+----
+Python help remains available in the Python REPL:
+    help()
+    help(object)
+    help('modules')
+
+Terminal help is separate and Linux-like:
+    help
+    man command
+    command --help
+
+
+HARDWARE TEST CHECKLIST
+-----------------------
+After installing a new G3A, verify on the physical calculator:
+
+1. Terminal starts and shows PU:<path>$ prompt.
+2. ls, pwd, mkdir, cd, touch, cat, mv, rm work.
+3. python opens REPL; exit returns to terminal.
+4. python test.py one two populates sys.argv correctly.
+5. python--h shows Python command manual.
+6. clear clears terminal output.
+7. UP/DOWN recalls commands.
+8. F1 opens dark/themed enhanced Files.
+9. Create .txt and .py files and folders.
+10. Rename and delete items.
+11. Run/Edit selection for .py files.
+12. Edit/save an ordinary .txt file.
+13. ZIP a file and folder; extract both.
+14. F3 opens modal module/method catalog.
+15. F4 toggles shell theme.
+16. F5 opens editor.
+17. Test all editor syntax themes.
+18. F6 displays build/collaboration info.
+19. import numpy as np; np.matrix(...) works.
+20. Test m.T and m.I.
+21. Confirm the app icon outer background is black.
+
+Automated build/tests do not replace physical fx-CG50 testing.
+
+
+PROJECT NOTE
+------------
+PythonUltra intentionally prioritizes practical calculator programming,
+2D/3D game development, usable filesystem tools and an onboard programming
+workflow over strict feature-for-feature desktop Python compatibility.
