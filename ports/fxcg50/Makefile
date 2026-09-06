@@ -13,10 +13,12 @@ pythonultra-runtime-fixes:
 	python3 ../sh/apply_runtime_fixes.py
 	python3 ../sh/apply_pythonultra_features.py
 	python3 ../sh/apply_pythonultra_ui2.py
+	python3 ../sh/apply_pythonultra_permissions.py
 	python3 -m py_compile \
 		../sh/modules/pythonultra/__init__.py \
 		../sh/modules/pyeditor/__init__.py \
 		../sh/modules/pyfiles/__init__.py \
+		../sh/modules/pyperm/__init__.py \
 		../sh/modules/pyterm/__init__.py \
 		../sh/modules/zipfile/__init__.py
 	python3 ../../tests/ports/sh/pygame_compat.py
