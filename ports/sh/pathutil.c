@@ -7,6 +7,13 @@
 
 static char pe_cwd[PE_PATH_MAX] = "/";
 
+/* gint indirect calls only accept register-sized primitive/pointer arguments.
+ * Hide struct stat * behind void * so the world switch follows that ABI. */
+static int pe_ws_stat(void *path_in, void *stat_out)
+{
+    return stat((char const *)path_in, (struct stat *)stat_out);
+}
+
 char const *pe_path_getcwd(void)
 {
     return pe_cwd;
@@ -87,7 +94,8 @@ int pe_path_chdir(char const *path)
     struct stat st;
     if(pe_path_resolve(path, resolved, sizeof resolved) < 0)
         return -1;
-    if((int)gint_world_switch(GINT_CALL(stat, resolved, &st)) < 0)
+    if(gint_world_switch(GINT_CALL(pe_ws_stat,
+        (void *)resolved, (void *)&st)) < 0)
         return -1;
     if((st.st_mode & S_IFMT) != S_IFDIR) {
         errno = ENOTDIR;
