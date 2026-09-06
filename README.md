@@ -26,6 +26,7 @@ The same add-in starts and displays correctly on both revisions. The newer-displ
 7. Add a NumPy-compatible numerical layer sized for the fx-CG50 rather than attempting to ship desktop NumPy unchanged.
 8. Produce reproducible `.g3a` build artifacts with GitHub Actions.
 9. Provide a compact, calculator-native Pygame compatibility layer for learning and game projects.
+10. Provide a compact software 3D engine that uses the native triangle rasterizer.
 
 ## Compact Pygame layer
 
@@ -42,12 +43,32 @@ The same add-in starts and displays correctly on both revisions. The newer-displ
 
 Audio, networking and SDL desktop-window features are deliberately omitted. The display is always the physical fx-CG50 resolution, 396×224, even if a desktop-oriented program requests another mode.
 
+## Compact py3d engine
+
+`import py3d` is frozen into PythonUltra. The first 3D milestone includes:
+
+- 3D vectors with add/subtract/scale, dot product, cross product and normalization;
+- 4×4 identity, translation, scaling and X/Y/Z rotation matrices;
+- matrix composition and vertex transformation;
+- perspective projection for the 396×224 fx-CG50 display;
+- back-face culling;
+- painter-style depth sorting;
+- simple directional face lighting and RGB565 shading;
+- filled mesh rendering through the native C-backed `gint.dtriangle()` rasterizer;
+- optional triangle wireframes;
+- a built-in colored cube mesh helper;
+- `ports/sh/examples/cg_py3d_cube.py`, an interactive rotating-cube hardware demo.
+
+The first milestone intentionally skips triangles that cross the near plane instead of splitting them, and uses painter sorting rather than a per-pixel Z-buffer. Those choices keep memory use appropriate for the calculator while establishing the full transform → cull → project → sort → rasterize pipeline.
+
 ## Development plan
 
 - `main` — imported upstream baseline and project infrastructure.
 - `cg50-new-display` — active PythonUltra integration branch, confirmed on older and newer fx-CG50 revisions.
 - **Completed milestone 1:** compact Pygame compatibility layer and PythonUltra rename.
-- **Next milestone 2:** expand and repair the compact NumPy layer, prioritizing matrix/vector operations, transpose and inverse.
+- **Completed milestone 2:** compact NumPy matrix/vector expansion, including transpose and inverse.
+- **Completed milestone 3:** first frozen `py3d` software-rendering engine and rotating-cube demo.
+- **Next 3D work:** near-plane triangle clipping, camera/view transforms, mesh loading, frustum culling and performance profiling on physical hardware.
 - **Later milestones:** standard-library expansion, uploaded turtle/matplotlib modules, shell improvements, debugger and text editor.
 
 ## Collaboration
