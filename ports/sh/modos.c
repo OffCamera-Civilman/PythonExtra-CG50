@@ -18,8 +18,12 @@
 #include <unistd.h>
 
 /*
- * fx-CG50 storage is handled by the OS. Filesystem calls must cross a gint
- * world switch, just like fdfile.c already does for open/read/write.
+ * fx-CG50 storage is handled by the OS. Filesystem calls that touch storage
+ * cross a gint world switch, just like fdfile.c already does for open/read/
+ * write. For directory enumeration, gint's maintainer documents that only
+ * opendir() needs the switch: DIR contains a cached directory snapshot and
+ * readdir()/closedir() then operate normally on that object.
+ *
  * GINT_CALL only accepts register-sized primitive/pointer arguments, so
  * structure pointers are passed as void * through small int-returning ABI
  * adapters. Pointer-returning libc calls are converted through uintptr_t.
@@ -27,16 +31,6 @@
 static int pe_ws_opendir(void *path_in)
 {
     return (int)(uintptr_t)opendir((char const *)path_in);
-}
-
-static int pe_ws_readdir(void *dir_in)
-{
-    return (int)(uintptr_t)readdir((DIR *)dir_in);
-}
-
-static int pe_ws_closedir(void *dir_in)
-{
-    return closedir((DIR *)dir_in);
 }
 
 static int pe_ws_mkdir(void *path_in, int mode)
@@ -110,18 +104,15 @@ static mp_obj_t pe_os_listdir(size_t n_args, const mp_obj_t *args)
         mp_raise_OSError(errno);
 
     mp_obj_t list = mp_obj_new_list(0, NULL);
-    while(1) {
-        struct dirent *entry = (struct dirent *)(uintptr_t)pe_os_world_int(
-            GINT_CALL(pe_ws_readdir, (void *)dir));
-        if(!entry)
-            break;
+    struct dirent *entry;
+    while((entry = readdir(dir))) {
         if(!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
             continue;
         mp_obj_list_append(list,
             mp_obj_new_str(entry->d_name, strlen(entry->d_name)));
     }
 
-    pe_os_check(pe_os_world_int(GINT_CALL(pe_ws_closedir, (void *)dir)));
+    pe_os_check(closedir(dir));
     return list;
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(pe_os_listdir_obj, 0, 1, pe_os_listdir);
