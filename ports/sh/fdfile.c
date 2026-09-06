@@ -36,8 +36,8 @@
 #include "py/stream.h"
 #include "py/builtin.h"
 #include "py/mphal.h"
-
 #include "py/obj.h"
+#include "pathutil.h"
 #include <gint/gint.h>
 
 #if MICROPY_PY_IO
@@ -99,31 +99,11 @@ static mp_uint_t fdfile_write(mp_obj_t o_in, const void *buf, mp_uint_t size, in
 }
 
 static mp_uint_t fdfile_ioctl(mp_obj_t o_in, mp_uint_t request, uintptr_t arg, int *errcode) {
-/*    mp_obj_fdfile_t *o = MP_OBJ_TO_PTR(o_in);
-    check_fd_is_open(o);
-    switch (request) {
-        case MP_STREAM_SEEK: {
-            struct mp_stream_seek_t *s = (struct mp_stream_seek_t*)arg;
-            off_t off = (int) gint_world_switch( GINT_CALL( lseek, o->fd, s->offset, s->whence) );
-            if (off == (off_t)-1) {
-                *errcode = errno;
-                return MP_STREAM_ERROR;
-            }
-            s->offset = off;
-            return 0;
-        }
-        case MP_STREAM_FLUSH:
-            if ((int) gint_world_switch( GINT_CALL( fsync, o->fd) ) < 0) {
-                *errcode = errno;
-                return MP_STREAM_ERROR;
-            }
-            return 0;
-        default:
-            *errcode = EINVAL;
-            return MP_STREAM_ERROR;
-    }
-*/
-    // FIXME: to do the correct function
+    (void)o_in;
+    (void)request;
+    (void)arg;
+    (void)errcode;
+    // FIXME: implement seek/flush correctly for the calculator target.
     return 0;
 }
 
@@ -153,10 +133,10 @@ static MP_DEFINE_CONST_FUN_OBJ_1(fdfile_fileno_obj, fdfile_fileno);
 // Note: encoding is ignored for now; it's also not a valid kwarg for CPython's FileIO,
 // but by adding it here we can use one single mp_arg_t array for open() and FileIO's constructor
 static const mp_arg_t file_open_args[] = {
-    { MP_QSTR_file, MP_ARG_OBJ | MP_ARG_REQUIRED, {.u_rom_obj = MP_ROM_NONE } }, //MP_ROM_PTR(&mp_const_none_obj)} },
+    { MP_QSTR_file, MP_ARG_OBJ | MP_ARG_REQUIRED, {.u_rom_obj = MP_ROM_NONE } },
     { MP_QSTR_mode, MP_ARG_OBJ, {.u_obj = MP_OBJ_NEW_QSTR(MP_QSTR_r)} },
-    { MP_QSTR_buffering, MP_ARG_OBJ, {.u_rom_obj = MP_ROM_NONE } }, //MP_ROM_PTR(&mp_const_none_obj)} },
-    { MP_QSTR_encoding, MP_ARG_OBJ, {.u_rom_obj = MP_ROM_NONE } }, //MP_ROM_PTR(&mp_const_none_obj)} },
+    { MP_QSTR_buffering, MP_ARG_OBJ, {.u_rom_obj = MP_ROM_NONE } },
+    { MP_QSTR_encoding, MP_ARG_OBJ, {.u_rom_obj = MP_ROM_NONE } },
 };
 #define FILE_OPEN_NUM_ARGS MP_ARRAY_SIZE(file_open_args)
 
@@ -167,34 +147,18 @@ static mp_obj_t fdfile_open(const mp_obj_type_t *type, mp_arg_val_t *args) {
     int mode_rw = 0, mode_x = 0;
     while (*mode_s) {
         switch (*mode_s++) {
-            case 'r':
-                mode_rw = O_RDONLY;
-                break;
-            case 'w':
-                mode_rw = O_WRONLY;
-                mode_x = O_CREAT | O_TRUNC;
-                break;
-            case 'a':
-                mode_rw = O_WRONLY;
-                mode_x = O_CREAT | O_APPEND;
-                break;
-            case '+':
-                mode_rw = O_RDWR;
-                break;
+            case 'r': mode_rw = O_RDONLY; break;
+            case 'w': mode_rw = O_WRONLY; mode_x = O_CREAT | O_TRUNC; break;
+            case 'a': mode_rw = O_WRONLY; mode_x = O_CREAT | O_APPEND; break;
+            case '+': mode_rw = O_RDWR; break;
             #if MICROPY_PY_IO_FILEIO
-            // If we don't have io.FileIO, then files are in text mode implicitly
-            case 'b':
-                type = &mp_type_fileio;
-                break;
-            case 't':
-                type = &mp_type_textio;
-                break;
+            case 'b': type = &mp_type_fileio; break;
+            case 't': type = &mp_type_textio; break;
             #endif
         }
     }
 
     o->base.type = type;
-
     mp_obj_t fid = args[0].u_obj;
 
     if (MP_OBJ_IS_SMALL_INT(fid)) {
@@ -202,11 +166,13 @@ static mp_obj_t fdfile_open(const mp_obj_type_t *type, mp_arg_val_t *args) {
         return MP_OBJ_FROM_PTR(o);
     }
 
+    char resolved[PE_PATH_MAX];
     const char *fname = mp_obj_str_get_str(fid);
-    int fd = (int) gint_world_switch( GINT_CALL( open, fname, mode_x | mode_rw, 0644) );
-    if (fd == -1) {
+    if(pe_path_resolve(fname, resolved, sizeof resolved) < 0)
         mp_raise_OSError(errno);
-    }
+    int fd = (int) gint_world_switch( GINT_CALL( open, resolved, mode_x | mode_rw, 0644) );
+    if (fd == -1)
+        mp_raise_OSError(errno);
     o->fd = fd;
     return MP_OBJ_FROM_PTR(o);
 }
@@ -241,9 +207,6 @@ static const mp_stream_p_t fileio_stream_p = {
     .ioctl = fdfile_ioctl,
 };
 
-// see https://github.com/micropython/micropython/wiki/Build-Troubleshooting
-// for conversion of former file structure to new one
-
 MP_DEFINE_CONST_OBJ_TYPE(
     mp_type_fileio,
     MP_QSTR_FileIO,
@@ -254,19 +217,6 @@ MP_DEFINE_CONST_OBJ_TYPE(
     protocol, &fileio_stream_p,
     locals_dict, &rawfile_locals_dict
 );
-
-/*
-const mp_obj_type_t mp_type_fileio = {
-    { &mp_type_type },
-    .name = MP_QSTR_FileIO,
-    .print = fdfile_print,
-    .make_new = fdfile_make_new,
-    .getiter = mp_identity_getiter,
-    .iternext = mp_stream_unbuffered_iter,
-    .protocol = &fileio_stream_p,
-    .locals_dict = (mp_obj_dict_t*)&rawfile_locals_dict,
-};
-*/
 #endif
 
 static const mp_stream_p_t textio_stream_p = {
@@ -275,9 +225,6 @@ static const mp_stream_p_t textio_stream_p = {
     .ioctl = fdfile_ioctl,
     .is_text = true,
 };
-
-// see https://github.com/micropython/micropython/wiki/Build-Troubleshooting
-// for conversion of former file structure to new one
 
 MP_DEFINE_CONST_OBJ_TYPE(
     mp_type_textio,
@@ -290,16 +237,12 @@ MP_DEFINE_CONST_OBJ_TYPE(
     locals_dict, &rawfile_locals_dict
 );
 
-
-// Factory function for I/O stream classes
 mp_obj_t mp_builtin_open(size_t n_args, const mp_obj_t *args, mp_map_t *kwargs) {
-    // TODO: analyze buffering args and instantiate appropriate type
     mp_arg_val_t arg_vals[FILE_OPEN_NUM_ARGS];
     mp_arg_parse_all(n_args, args, kwargs, FILE_OPEN_NUM_ARGS, file_open_args, arg_vals);
     return fdfile_open(&mp_type_textio, arg_vals);
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(mp_builtin_open_obj, 1, mp_builtin_open);
-
 
 const mp_obj_fdfile_t mp_sys_stdin_obj  = { .base = {&mp_type_textio}, .fd = STDIN_FILENO };
 const mp_obj_fdfile_t mp_sys_stdout_obj = { .base = {&mp_type_textio}, .fd = STDOUT_FILENO };
