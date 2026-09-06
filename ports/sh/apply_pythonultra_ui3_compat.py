@@ -9,11 +9,14 @@ UI3 also adds string-based font selectors to modgint.c. Ensure the generated C
 source declares strcmp() explicitly so the SH cross-compiler can build it with
 implicit-function declarations treated as errors.
 
-Hardware follow-up: UI2 historically forced Terminal as the startup view even
-though the base application starts in Files. The current PythonUltra preference
-is enhanced Files first. This compatibility stage runs after UI2, so it restores
-that behavior without allowing the older UI2 replacement to undo it. It also
-avoids frozen-QSTR punctuation names in the terminal manual separator.
+Hardware follow-up: UI2/UI3 initialize the native Terminal first so RC settings,
+font, theme and persistent history can be restored. PythonUltra should still
+*present* enhanced Files first. Rather than replacing UI3's startup block, run
+pyfiles immediately after native startup is complete and just before the event
+loop. This preserves terminal initialization while making Files the first user-
+visible workspace. The compatibility stage also avoids frozen-QSTR punctuation
+names and defaults the editor to the known-good system font until JetBrains Mono
+raster generation is fixed on hardware.
 '''
 
 from pathlib import Path
@@ -47,25 +50,23 @@ def _ensure_string_header():
 def _prefer_files_startup():
     path = Path(__file__).with_name("main.c")
     text = path.read_text(encoding="utf-8")
-    old = '''    /* Initial state: terminal first; F1 opens enhanced Files. */
-    jfileselect_browse(PE.fileselect, "/");
-    jscene_show_and_focus(PE.scene, PE.shell);
-    jwidget_set_visible(PE.title, PE.show_title_in_shell);
+    marker = '''    //=== Event handling ===//
 '''
-    new = '''    /* Initial state: enhanced Files first; F2 opens Terminal. */
-    jfileselect_browse(PE.fileselect, "/");
-    jscene_show_and_focus(PE.scene, PE.shell);
-    jwidget_set_visible(PE.title, PE.show_title_in_shell);
+    injected = '''    /* PythonUltra hardware default: present enhanced Files first. Native
+       Terminal startup has already restored RC/theme/font/history above. */
     if(pe_dark_mode)
         pe_run_python_action("import pyfiles as _pf; _pf.browse('/', 'GitHub Dark')");
     else
         pe_run_python_action("import pyfiles as _pf; _pf.browse('/', 'GitHub Light')");
+    pe_show_shell();
+
+    //=== Event handling ===//
 '''
-    if new in text:
+    if injected in text:
         return
-    if old not in text:
-        raise SystemExit("Unable to locate PythonUltra terminal-first startup block")
-    path.write_text(text.replace(old, new, 1), encoding="utf-8")
+    if marker not in text:
+        raise SystemExit("Unable to locate PythonUltra event-loop marker")
+    path.write_text(text.replace(marker, injected, 1), encoding="utf-8")
 
 
 def _runtime_help_separator():
@@ -80,6 +81,18 @@ def _runtime_help_separator():
     path.write_text(text.replace(old, new, 1), encoding="utf-8")
 
 
+def _safe_editor_default_font():
+    path = Path(__file__).with_name("modules") / "pyeditor" / "__init__.py"
+    text = path.read_text(encoding="utf-8")
+    old = 'DEFAULT_FONT = "JetBrains Small"\n'
+    new = 'DEFAULT_FONT = "System Small"\n'
+    if new in text:
+        return
+    if old not in text:
+        raise SystemExit("Unable to locate PythonUltra editor default font")
+    path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+
 ui3.replace_once = _compatible_replace_once
 
 if __name__ == "__main__":
@@ -87,3 +100,4 @@ if __name__ == "__main__":
     _ensure_string_header()
     _prefer_files_startup()
     _runtime_help_separator()
+    _safe_editor_default_font()
