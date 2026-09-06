@@ -64,9 +64,14 @@ assert "WIDGET_SHELL_SYMBOLS" in widget and "WIDGET_SHELL_SYMBOLS" in widget_h
 assert "KEY_DEL" in widget and "ev.shift" in widget
 assert "MP_QSTR_symbol_ui" in main and "console_write_raw" in main
 assert "def symbol_ui(" in pyultra and "_PROGRAMMING_SYMBOLS" in pyultra
-for symbol in ('"@"', '"#"', '"$"', '"%"', '"^"', '"&"', '"*"', '"!"',
-               '"<"', '">"', '"["', '"]"', '"{"', '"}"', '":"', '";"', '","'):
-    assert symbol in pyultra
+# Symbols are intentionally created from ASCII codes at runtime. Literal frozen
+# punctuation can surface as QSTR-safe names such as _hyphen_ on the fx-CG50.
+assert "_PROGRAMMING_SYMBOL_CODES" in pyultra
+assert "tuple(chr(code) for code in _PROGRAMMING_SYMBOL_CODES)" in pyultra
+for code in (64, 35, 36, 37, 94, 38, 42, 33, 60, 62, 61, 43, 45,
+             47, 92, 124, 95, 40, 41, 91, 93, 123, 125, 39, 34, 58,
+             59, 44, 46):
+    assert str(code) in pyultra
 
 # Embedded system + JetBrains Mono font families and editor font control.
 assert "modgint_dfont_builtin" in modgint and "OBJ(dfont_builtin)" in modgint
@@ -94,8 +99,9 @@ assert 'freeze("modules", "pyterm", opt=3)' in manifest
 assert 'freeze("modules", "zipfile", opt=3)' in manifest
 
 # Linux-like terminal behavior, help flags, rc/history, permissions and files.
-assert 'args[0] in ("-h", "--help")' in pyterm and "def dispatch(" in pyterm
-assert 'endswith("--h")' not in pyterm
+assert "def dispatch(" in pyterm
+assert '"-h"' in pyterm and '"--help"' in pyterm
+assert '"--h"' in pyterm and '"-help"' in pyterm
 assert "zip" in pyterm and "unzip" in pyterm
 assert '"chmod"' in pyterm and "pyperm.chmod" in pyterm
 assert 'RC_PATH = "/.pythonultrarc"' in pyterm
