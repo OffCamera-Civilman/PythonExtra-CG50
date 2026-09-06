@@ -1,6 +1,6 @@
 """PythonUltra on-calculator reference and UI helpers."""
 
-__version__ = "0.3.0-cg50"
+__version__ = "0.3.1-cg50"
 
 try:
     from ._build import BUILD_ID
@@ -14,6 +14,7 @@ _CATALOG = (
     ("pygame", ("Color", "Rect", "Surface", "display", "draw", "event", "key", "time", "font", "image", "transform", "sprite", "init", "quit")),
     ("py3d", ("Renderer", "cube", "vec3", "add", "sub", "scale", "dot", "cross", "length", "normalize", "identity", "matmul4", "compose", "translation", "scaling", "rotation_x", "rotation_y", "rotation_z", "transform", "focal_length", "project", "rgb565", "shade_rgb565", "prepare_triangles")),
     ("ctypes", ("c_int", "c_uint", "c_float", "c_double", "c_bool", "buffer", "read_u8", "write_u8", "fill", "copy", "available", "call")),
+    ("checksum", ("sha256_file", "sha1_file")),
     ("os", ("getcwd", "chdir", "listdir", "mkdir", "remove", "unlink", "rename", "rmdir", "stat", "sep")),
     ("json", ("dumps", "loads", "dump", "load")),
     ("time", ("time", "sleep", "sleep_ms", "sleep_us", "ticks_ms", "ticks_us", "ticks_diff")),
@@ -131,8 +132,8 @@ def info_lines():
         "Planete Casio contributors",
         "New-display compatibility included",
         "NumPy + Pygame + py3d + Editor",
-        "Terminal + Files + ZIP/UNZIP",
-        "F3 Catalog F4 Theme F6 Info",
+        "Files + ZIP + SHA256/SHA1",
+        "Terminal + Catalog + Themes",
     )
 
 
