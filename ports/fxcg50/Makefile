@@ -33,6 +33,7 @@ ICONS_RELEASE := --icon-uns=icon-uns.png --icon-sel=icon-sel.png
 ICONS_DEV := --icon-uns=icon-uns-dev.png --icon-sel=icon-sel-dev.png
 
 PythonUltra.g3a: $(BUILD)/firmware.bin
+	python3 blacken_icon.py
 	fxgxa --g3a -n PythonUltra $(ICONS_$(BUILDTYPE)) $< -o $@
 
 send: all
