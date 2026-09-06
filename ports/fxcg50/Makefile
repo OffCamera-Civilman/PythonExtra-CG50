@@ -4,9 +4,15 @@ SH_CFLAGS := -DFXCG50
 TARGETCASIO := "FXCG50"
 SH_LDFLAGS := -T fxcg50.ld -ljustui-cg -lm -lgint-cg -lc -lgint-cg -lgcc
 
-SH_ASSETS := img_modifier_states.png font_9.png font_13.png font_19.png PoliceNW
+JETBRAINS_FONTS := font_jb_9.png font_jb_13.png font_jb_19.png
+SH_ASSETS := img_modifier_states.png font_9.png font_13.png font_19.png $(JETBRAINS_FONTS) PoliceNW
 SH_METADATA := fxconv-metadata.txt
 SH_CONVFLAGS := --cg
+
+# Generate fixed-width calculator raster fonts from the pinned official
+# JetBrains Mono OFL source. The source TTF is not shipped as an artifact.
+$(JETBRAINS_FONTS) &: prepare_jetbrains_mono.py JetBrainsMono-OFL.txt
+	python3 prepare_jetbrains_mono.py
 
 .PHONY: pythonultra-runtime-fixes
 pythonultra-runtime-fixes:
@@ -14,7 +20,7 @@ pythonultra-runtime-fixes:
 	python3 ../sh/apply_pythonultra_features.py
 	python3 ../sh/apply_pythonultra_ui2.py
 	python3 ../sh/apply_pythonultra_permissions.py
-	python3 ../sh/apply_pythonultra_fonts.py
+	python3 ../sh/apply_pythonultra_ui3.py
 	python3 -m py_compile \
 		../sh/modules/pythonultra/__init__.py \
 		../sh/modules/pyeditor/__init__.py \
