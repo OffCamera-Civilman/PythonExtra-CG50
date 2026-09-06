@@ -9,7 +9,7 @@ import gc
 import os
 import sys
 
-__version__ = "0.1.0-cg50"
+__version__ = "0.1.1-cg50"
 
 ENTER_PYTHON = 1
 CLEAR_SCREEN = 2
@@ -275,10 +275,6 @@ def dispatch(line):
     if not line:
         return 0
 
-    # Friendly no-space help shorthand requested for calculator typing.
-    if line.lower().endswith("--h") and " " not in line:
-        line = line[:-3] + " --help"
-
     try:
         argv = _split(line)
     except ValueError as exc:
@@ -497,5 +493,3 @@ def dispatch(line):
             print("PythonUltra")
         print("MicroPython " + sys.version)
         return 0
-
-    return 0
