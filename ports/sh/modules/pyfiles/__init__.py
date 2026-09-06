@@ -5,7 +5,7 @@ import os
 import sys
 import pyperm
 
-__version__ = "0.4.0-cg50"
+__version__ = "0.4.1-cg50"
 
 SCREEN_W = 396
 SCREEN_H = 224
@@ -217,51 +217,70 @@ class Browser:
             elif key == g.KEY_ADD: top = min(max(0, len(lines) - rows), top + rows)
             elif key == g.KEY_SUB: top = max(0, top - rows)
 
-    def checksum_ui(self, path):
+    def _draw_file_info(self, path, st):
         g, p = self.g, self.palette
+        lower = path.lower()
+        action = "RUN" if lower.endswith(".py") else ("UNZIP" if lower.endswith(".zip") else "PERM")
+        g.dclear(p[0])
+        g.drect(0, 0, SCREEN_W - 1, HEADER_H - 1, p[2])
+        g.dtext(4, 3, p[3], "File information")
+        g.dtext(8, 28, p[3], "Filename:")
+        g.dtext(8, 41, p[1], _basename(path)[:42])
+        g.dtext(8, 59, p[3], "Full file path:")
+        g.dtext(8, 72, p[1], path[:46])
+        g.dtext(8, 91, p[3], "File type:")
+        g.dtext(116, 91, p[1], _file_type(path)[:29])
+        g.dtext(8, 108, p[3], "File size:")
+        g.dtext(116, 108, p[1], str(st[6]) + " bytes")
+        g.dtext(8, 125, p[3], "Permissions:")
+        g.dtext(116, 125, p[1], _mode_string(path))
+        if len(st) > 8:
+            g.dtext(8, 142, p[3], "Modified:")
+            g.dtext(116, 142, p[1], str(st[8])[:28])
+        self.draw_softkeys(("OPEN", "EDIT", "COMP", action, "", "CALC"))
+
+    def checksum_ui(self, path, st=None):
+        g, p = self.g, self.palette
+        if st is None:
+            try: st = os.stat(path)
+            except OSError:
+                self.msg = "Stat error"; return
         try:
             import checksum
-            self.msg = "Hashing..."; self.draw()
+            self._draw_file_info(path, st)
+            g.drect(82, 72, 314, 108, p[0])
+            g.drect_border(82, 72, 314, 108, p[13], 2, p[0])
+            g.dtext(98, 84, p[1], "Calculating checksums...")
+            g.dupdate()
             sha256 = checksum.sha256_file(path)
             sha1 = checksum.sha1_file(path)
         except Exception as exc:
             print("Checksum error:", repr(exc)); self.msg = "Hash error"; return
         while True:
-            g.dclear(p[0])
-            g.drect(0, 0, SCREEN_W - 1, HEADER_H - 1, p[2])
-            g.dtext(4, 3, p[3], "CHECKSUM " + _basename(path)[:31])
-            g.dtext(8, 28, p[1], "SHA-256:")
-            g.dtext(8, 43, p[1], sha256[:32])
-            g.dtext(8, 56, p[1], sha256[32:64])
-            g.dtext(8, 82, p[1], "SHA-1:")
-            g.dtext(8, 97, p[1], sha1[:32])
-            g.dtext(8, 110, p[1], sha1[32:40])
-            g.dtext(8, 144, p[1], "Streaming hashes; file not loaded into RAM")
-            self.draw_softkeys(("", "", "", "", "", "BACK"))
+            # Keep the file-information page visible behind the checksum modal.
+            self._draw_file_info(path, st)
+            g.drect(64, 45, 369, 184, p[2])
+            g.drect_border(58, 39, 363, 178, p[13], 2, p[0])
+            g.drect_border(62, 43, 359, 174, p[13], 1, p[0])
+            g.dtext(70, 52, p[1], "SHA-256 checksum:")
+            g.dtext(70, 67, p[1], sha256[:32])
+            g.dtext(70, 80, p[1], sha256[32:64])
+            g.dtext(70, 103, p[1], "SHA-1 checksum:")
+            g.dtext(70, 118, p[1], sha1[:32])
+            g.dtext(70, 131, p[1], sha1[32:40])
+            g.dtext(124, 153, p[1], "Press: [EXIT]")
             g.dupdate(); key = g.getkey().key
             if key in (g.KEY_EXIT, g.KEY_F6, g.KEY_LEFT): break
         self.msg = "Hashes OK"
 
     def file_info(self, path):
-        g, p = self.g, self.palette
+        g = self.g
         try: st = os.stat(path)
         except OSError as exc:
             self.msg = "Stat " + str(exc)[:12]; return
         lower = path.lower()
         while True:
-            action = "RUN" if lower.endswith(".py") else ("UNZIP" if lower.endswith(".zip") else "PERM")
-            g.dclear(p[0])
-            g.drect(0, 0, SCREEN_W - 1, HEADER_H - 1, p[2])
-            g.dtext(4, 3, p[3], "FILE INFORMATION")
-            g.dtext(8, 28, p[1], "Filename: " + _basename(path)[:35])
-            g.dtext(8, 47, p[1], "Path: " + path[:40])
-            g.dtext(8, 66, p[1], "Type: " + _file_type(path))
-            g.dtext(8, 85, p[1], "Size: " + str(st[6]) + " bytes")
-            g.dtext(8, 104, p[1], "Permissions: " + _mode_string(path))
-            if len(st) > 8:
-                g.dtext(8, 123, p[1], "Modified: " + str(st[8]))
-            g.dtext(8, 153, p[1], "EXE from Files opens this information page")
-            self.draw_softkeys(("OPEN", "EDIT", "ZIP", action, "HASH", "BACK"))
+            self._draw_file_info(path, st)
             g.dupdate(); key = g.getkey().key
             if key == g.KEY_F1:
                 if _looks_text(path): self.text_viewer(path)
@@ -279,9 +298,9 @@ class Browser:
                 self.permission_menu(path)
                 try: st = os.stat(path)
                 except OSError: return
-            elif key == g.KEY_F5:
-                self.checksum_ui(path)
-            elif key in (g.KEY_F6, g.KEY_EXIT, g.KEY_LEFT): return
+            elif key == g.KEY_F6:
+                self.checksum_ui(path, st)
+            elif key in (g.KEY_EXIT, g.KEY_LEFT): return
 
     def enter_selected(self):
         entry = self.selected_entry()
