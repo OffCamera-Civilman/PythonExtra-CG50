@@ -686,7 +686,7 @@ class Surface:
             _gint.dtext(dx, dy, source._text_color, source._text)
             return result
 
-        if self._screen and source._image is not None:
+        if self._screen and source._image is not None and source._colorkey is None:
             if area is None:
                 _gint.dimage(dx, dy, source._image)
             else:
