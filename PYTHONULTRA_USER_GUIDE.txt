@@ -25,7 +25,7 @@ F5  EDITOR   Open a new text file in PythonUltra Editor
 F6  INFO     Build, project and collaboration information
 
 In the shell/terminal:
-UP / DOWN        recall previous/next command
+UP / DOWN        recall previous/next command in the current session
 SHIFT+UP/DOWN    scroll terminal output
 
 
@@ -38,8 +38,9 @@ Prompt example:
     PU:/$
 
 Built-in commands:
-    help man ls cd pwd mkdir touch rm rmdir mv cp cat echo clear
+    help man ls cd pwd mkdir touch rm rmdir mv cp cat echo clear chmod
     python zip unzip edit files modules info version
+    alias unalias source history font theme rc
 
 Get help:
     help
@@ -47,7 +48,6 @@ Get help:
     man python
     python -h
     python --help
-    python--h
 
 Most terminal commands also accept:
     command -h
@@ -62,6 +62,9 @@ List files:
     ls
     ls games
     ls -l
+
+`ls -l` displays PythonUltra rwx permissions, file size and name, for example:
+    -rw-r--r--     1200 hello.py
 
 Change directory:
     cd games
@@ -117,13 +120,63 @@ Show versions:
     version
 
 
+PERMISSIONS / CHMOD
+-------------------
+The fx-CG50 storage filesystem does not expose real POSIX chmod mode bits.
+PythonUltra therefore maintains its own persistent permission table and enforces
+it across the PythonUltra terminal, Files application, editor and direct script
+launcher.
+
+The permission values follow normal Unix octal notation:
+    read    = 4
+    write   = 2
+    execute = 1
+
+Examples:
+    chmod 444 file.txt
+        Read-only.
+
+    chmod 644 notes.txt
+        Owner read/write; group/others read.
+
+    chmod 755 hello.py
+        Owner rwx; group/others read/execute.
+
+    chmod 700 private.py
+        Owner rwx only.
+
+    chmod 777 tool.py
+        Read/write/execute for all classes.
+
+PythonUltra is a single-user calculator environment, so any enabled read/write
+or execute bit permits that operation inside PythonUltra. The full nine-bit
+mode is still stored and displayed to preserve normal Linux notation.
+
+Permission records are stored persistently in:
+    /.pythonultra_permissions
+
+Files > F6 > Permissions provides common chmod modes and a Custom option.
+
+Important Linux-style execution rule:
+    python hello.py
+requires READ permission because Python itself is interpreting the file.
+
+Direct execution:
+    chmod 755 hello.py
+    ./hello.py
+requires both READ and EXECUTE permission.
+
+A 444 file can be opened/read in the editor, but PythonUltra will refuse to save
+over it until write permission is restored, for example:
+    chmod 644 file.txt
+
+
 PYTHON COMMAND / REPL
 ---------------------
 Enter interactive Python:
     python
 
-The prompt then becomes the normal Python REPL prompt.
-To return to terminal mode, type:
+To return to terminal mode:
     exit
 or:
     exit()
@@ -138,7 +191,7 @@ Inside hello.py:
     import sys
     print(sys.argv)
 
-The result will contain approximately:
+The result contains:
     ['hello.py', 'Brandon', '42']
 
 Run code directly:
@@ -147,7 +200,6 @@ Run code directly:
 Python command help:
     python -h
     python --help
-    python--h
 
 IMPORTANT ARGUMENT RULE:
     python hello.py -h
@@ -155,6 +207,103 @@ passes -h TO hello.py through sys.argv. It does not open PythonUltra's Python
 help because the script name came first.
 
 The clear command also works while in the Python REPL.
+
+
+SHELL RC / ALIASES
+------------------
+PythonUltra uses a calculator-friendly shell configuration file:
+    /.pythonultrarc
+
+A default file is created automatically. It supports comments, startup cd,
+aliases and persistent terminal font/theme preferences.
+
+Example:
+    # PythonUltra terminal configuration
+    set theme=dark
+    set font=normal
+    cd /games
+    alias ll='ls -l'
+    alias py=python
+
+List current aliases:
+    alias
+
+Create a session alias:
+    alias ll='ls -l'
+
+Remove it:
+    unalias ll
+
+Reload the RC file:
+    source /.pythonultrarc
+or:
+    rc reload
+
+Show the RC file:
+    rc show
+
+Edit it inside PythonUltra:
+    rc edit
+
+Aliases created only at the prompt last for the current session. Put them in
+/.pythonultrarc to restore them after PythonUltra restarts.
+
+
+COMMAND HISTORY
+---------------
+Current-session editing history:
+    UP      older command
+    DOWN    newer command
+
+Terminal commands are also appended to the persistent history file:
+    /.pythonultra_history
+
+Display it:
+    history
+
+Show only the last 10 entries:
+    history 10
+
+Clear persistent history:
+    history -c
+
+SHIFT+UP/DOWN remains reserved for scrolling terminal output.
+
+
+TERMINAL FONT SIZE
+------------------
+PythonUltra uses actual compiled fx-CG50 font resources rather than simulated
+screen zoom.
+
+Commands:
+    font small
+    font normal
+    font large
+
+The presets map to the compiled 9-, 13- and 19-pixel font resources.
+
+Show the current choice:
+    font
+
+Persist the default in /.pythonultrarc:
+    set font=small
+or:
+    set font=normal
+or:
+    set font=large
+
+
+TERMINAL THEME
+--------------
+Commands:
+    theme dark
+    theme light
+    theme toggle
+
+Persist it in /.pythonultrarc:
+    set theme=dark
+
+F4 remains the quick shell theme toggle.
 
 
 FILES - GRAPHICAL FILE MANAGER
@@ -189,6 +338,7 @@ Known text types open directly. Unknown/binary types ask before opening as text.
 
 The More menu includes:
     Up one folder
+    Permissions
     Compress to ZIP
     Extract ZIP
     Theme
@@ -196,7 +346,10 @@ The More menu includes:
     Refresh
     Exit Files
 
-Files supports the same light/dark visual family used by PythonUltra.
+The Permissions menu includes common modes such as 444, 600, 644, 700, 755 and
+777, plus a Custom chmod entry.
+
+Files supports light/dark themed backgrounds.
 
 
 ZIP / UNZIP
@@ -250,7 +403,22 @@ F2  Save
 F3  New
 F4  Open
 F5  Find
-F6  Syntax theme
+F6  Style
+
+F6 > Syntax Theme provides:
+- GitHub Dark
+- GitHub Light
+- Linux Terminal
+- PythonUltra Dark
+- PythonUltra Light
+
+F6 > Font Size provides:
+- small
+- normal
+- large
+
+The editor font presets use the same compiled fx-CG50 9/13/19 font resources as
+the terminal font system.
 
 Navigation:
 Arrow keys     move cursor
@@ -270,24 +438,16 @@ SHIFT+4        open curated PythonUltra module catalog and insert a name
 SHIFT+DEL      symbol popup
 
 The editor automatically indents after a line ending in ':'.
-
-Supported syntax-highlighting themes:
-- GitHub Dark
-- GitHub Light
-- Linux Terminal
-- PythonUltra Dark
-- PythonUltra Light
-
 Highlighting distinguishes Python keywords, built-ins, numbers, strings,
 comments, decorators, types, modules and operators.
 
 The editor can edit ordinary text files as well as Python source.
+PythonUltra rwx permissions are honored when opening, saving and running files.
 
 
 F3 MODULE CATALOG
 -----------------
-F3 opens a real modal catalog browser rather than dumping a long list into the
-shell.
+F3 opens a modal catalog browser rather than dumping a long list into the shell.
 
 1. Choose a module.
 2. Press EXE/RIGHT.
@@ -295,11 +455,11 @@ shell.
 4. EXIT/LEFT backs out.
 
 The catalog intentionally hides internal/private implementation names where
-possible so calculator users see the functions they can actually use.
+possible.
 
-Catalog coverage includes PythonUltra modules such as:
+Catalog coverage includes modules such as:
     numpy pygame py3d gint ctypes os json time math random sys
-    zipfile deflate pyterm pyeditor pyfiles casioplot kandinsky ion
+    zipfile deflate pyterm pyeditor pyfiles pyperm casioplot kandinsky ion
 
 
 F6 BUILD INFO
@@ -322,23 +482,14 @@ accelerator is private (_numpy_fast) so it no longer shadows the Python package.
 
 Example:
     import numpy as np
-
     m = np.matrix([[1, 2], [3, 4]])
     print(m)
     print(m.T)
     print(m.I)
 
 Aliases/helpers include:
-    np.matrix
-    np.mat
-    np.asarray
-    np.asmatrix
-    np.dot
-    np.cross
-    np.norm
-    np.normalize
-    np.lerp
-    np.matmul
+    np.matrix np.mat np.asarray np.asmatrix np.dot np.cross
+    np.norm np.normalize np.lerp np.matmul
 
 Matrix functionality includes transpose, inverse, multiplication and matrix
 power support in the compact implementation.
@@ -385,23 +536,12 @@ Terminal cd changes the real working directory used by following terminal
 commands and Python scripts.
 
 
-COMMAND HISTORY
----------------
-The shell remembers recent entered commands.
-
-UP      older command
-DOWN    newer command
-
-This avoids retyping long Python or terminal commands.
-SHIFT+UP/DOWN remains available for output scrolling.
-
-
 DARK MODE / THEMES
 ------------------
-The shell supports dark/light mode through F4.
+The shell supports dark/light mode through F4 or the theme command.
 The graphical Files application supports themed backgrounds.
-The editor has five syntax themes, including GitHub Dark/Light and Linux
-Terminal.
+The editor includes GitHub Dark/Light, Linux Terminal, PythonUltra Dark/Light,
+and separate font-size selection.
 The PythonUltra G3A app icon uses a black outer background.
 
 
@@ -412,9 +552,10 @@ Python help remains available in the Python REPL:
     help(object)
     help('modules')
 
-Terminal help is separate and Linux-like:
+Terminal help is Linux-like:
     help
     man command
+    command -h
     command --help
 
 
@@ -424,25 +565,33 @@ After installing a new G3A, verify on the physical calculator:
 
 1. Terminal starts and shows PU:<path>$ prompt.
 2. ls, pwd, mkdir, cd, touch, cat, mv, rm work.
-3. python opens REPL; exit returns to terminal.
-4. python test.py one two populates sys.argv correctly.
-5. python--h shows Python command manual.
-6. clear clears terminal output.
-7. UP/DOWN recalls commands.
-8. F1 opens dark/themed enhanced Files.
-9. Create .txt and .py files and folders.
-10. Rename and delete items.
-11. Run/Edit selection for .py files.
-12. Edit/save an ordinary .txt file.
-13. ZIP a file and folder; extract both.
-14. F3 opens modal module/method catalog.
-15. F4 toggles shell theme.
-16. F5 opens editor.
-17. Test all editor syntax themes.
-18. F6 displays build/collaboration info.
-19. import numpy as np; np.matrix(...) works.
-20. Test m.T and m.I.
-21. Confirm the app icon outer background is black.
+3. `ls -l` displays rwx permissions.
+4. `chmod 444 test.txt` makes it read-only inside PythonUltra.
+5. Editor can read the 444 file but refuses to save over it.
+6. `chmod 644 test.txt` restores write access.
+7. `chmod 755 hello.py` then `./hello.py` directly runs the script.
+8. python opens REPL; exit returns to terminal.
+9. python test.py one two populates sys.argv correctly.
+10. python -h and python --help show Python command manual.
+11. clear clears terminal output.
+12. UP/DOWN recalls current-session commands.
+13. history displays /.pythonultra_history; history -c clears it.
+14. Add an alias to /.pythonultrarc and verify it loads after restart.
+15. Test font small, normal and large.
+16. F1 opens dark/themed enhanced Files.
+17. Create .txt and .py files and folders.
+18. Rename and delete items.
+19. Run/Edit selection for .py files.
+20. Test Files > Permissions.
+21. ZIP a file/folder and extract it.
+22. F3 opens modal module/method catalog.
+23. F4 toggles shell theme.
+24. F5 opens editor.
+25. Test all editor syntax themes and font sizes.
+26. F6 displays build/collaboration info.
+27. import numpy as np; np.matrix(...) works.
+28. Test m.T and m.I.
+29. Confirm the app icon outer background is black.
 
 Automated build/tests do not replace physical fx-CG50 testing.
 
