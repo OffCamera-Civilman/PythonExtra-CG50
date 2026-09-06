@@ -62,8 +62,9 @@ Built-in manual/help:
   man python
   python -h
   python --help
-  python--h
+  ls -h
   ls --help
+  zip -h
   zip --help
 
 ============================================================
@@ -96,7 +97,6 @@ Pass a flag to your script:
 Show PythonUltra's Python command help instead:
   python -h
   python --help
-  python--h
 
 Run code directly:
   python -c "print(2+2)"
@@ -285,6 +285,7 @@ Python help:
 Terminal manual:
   help
   man COMMAND
+  COMMAND -h
   COMMAND --help
 
 F3 opens the graphical module/method catalog.
