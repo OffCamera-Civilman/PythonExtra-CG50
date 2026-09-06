@@ -27,6 +27,7 @@ SRC_C = \
     ports/sh/libc_compat.c \
     ports/sh/pathutil.c \
     ports/sh/modcasioplot.c \
+    ports/sh/modchecksum.c \
     ports/sh/modctypes.c \
     ports/sh/modgint.c \
     ports/sh/modnumpy.c \
@@ -50,6 +51,7 @@ SRC_QSTR += \
     ports/sh/fdfile.c \
     ports/sh/main.c \
     ports/sh/modcasioplot.c \
+    ports/sh/modchecksum.c \
     ports/sh/modctypes.c \
     ports/sh/modgint.c \
     ports/sh/modnumpy.c \
