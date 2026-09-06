@@ -1,6 +1,7 @@
 """Build-time regression checks for PythonUltra calculator features."""
 
 from pathlib import Path
+import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -79,7 +80,10 @@ assert "pe_path_getcwd" in pathutil and "pe_path_chdir" in pathutil and "pe_path
 assert "pe_path_getcwd" in modos and "pe_path_chdir" in modos and "pe_path_resolve" in modos
 assert "pe_path_resolve" in fdfile
 assert "pe_path_getcwd" in main and "pe_path_resolve" in main
-assert "getcwd(" not in modos and "chdir(" not in modos.replace("pe_path_chdir(", "")
+# Reject actual bare libc cwd calls while allowing PythonUltra wrappers such as
+# pe_os_getcwd(), pe_os_chdir(), pe_path_getcwd() and pe_path_chdir().
+assert re.search(r"(?<![A-Za-z0-9_])getcwd\s*\(", modos) is None
+assert re.search(r"(?<![A-Za-z0-9_])chdir\s*\(", modos) is None
 
 # Frozen public modules.
 assert 'freeze("modules", "pythonultra", opt=3)' in manifest
