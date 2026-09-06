@@ -1,0 +1,20 @@
+name: Test py3d
+
+on:
+  push:
+    branches:
+      - cg50-new-display
+    paths:
+      - "ports/sh/modules/py3d/**"
+      - "tests/ports/sh/py3d_compat.py"
+      - ".github/workflows/test-py3d.yml"
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Run compact py3d regressions
+        run: python3 tests/ports/sh/py3d_compat.py
