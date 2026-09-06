@@ -31,8 +31,8 @@ def patch(path, replacements):
 def patch_python_ui():
     return patch(PYULTRA, [
         (
-            '''UI_DARK = {"bg":0x1082, "fg":0xD69A, "bar":0x3186, "sel_bg":0x2148, "sel_fg":0xFFFF, "title":0x7D7C}\n\n\ndef modules():\n''',
-            '''UI_DARK = {"bg":0x1082, "fg":0xD69A, "bar":0x3186, "sel_bg":0x2148, "sel_fg":0xFFFF, "title":0x7D7C}\n\n# Common ASCII characters used in Python, shell commands, paths, expressions,\n# data formats and general programming. SHIFT+DEL opens this list in Terminal.\n_PROGRAMMING_SYMBOLS = (\n    "@", "#", "$", "%", "^", "&", "*", "!", "?", "~", "`",\n    "<", ">", "=", "+", "-", "/", "\\\\", "|", "_",\n    "(", ")", "[", "]", "{", "}", "'", '\"', ":", ";", ",", ".",\n)\n\n\ndef modules():\n''',
+            '''\n\ndef modules():\n''',
+            '''\n\n# Common ASCII characters used in Python, shell commands, paths, expressions,\n# data formats and general programming. SHIFT+DEL opens this list in Terminal.\n_PROGRAMMING_SYMBOLS = (\n    "@", "#", "$", "%", "^", "&", "*", "!", "?", "~", "`",\n    "<", ">", "=", "+", "-", "/", "\\\\", "|", "_",\n    "(", ")", "[", "]", "{", "}", "'", '\"', ":", ";", ",", ".",\n)\n\n\ndef modules():\n''',
             "programming symbol list",
         ),
         (
