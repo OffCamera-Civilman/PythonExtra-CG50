@@ -52,9 +52,8 @@ jobs:
           image = Image.open(source).convert("RGB")
           image = ImageOps.contain(image, size, Image.Resampling.LANCZOS)
 
-          # Preserve the full logo instead of cropping it. Use the image's
-          # corner color as the letterbox background so padding blends in.
-          background = Image.new("RGB", size, image.getpixel((0, 0)))
+          # Preserve the full logo and force a true black app-icon background.
+          background = Image.new("RGB", size, (0, 0, 0))
           x = (size[0] - image.width) // 2
           y = (size[1] - image.height) // 2
           background.paste(image, (x, y))
@@ -67,7 +66,15 @@ jobs:
           ):
               background.save(out_dir / name, "PNG")
 
-          print(f"Prepared G3A icon from {source}: {size[0]}x{size[1]}")
+          # Regression check: all four outer corners must be black.
+          for name in ("icon-uns.png", "icon-sel.png", "icon-uns-dev.png", "icon-sel-dev.png"):
+              check = Image.open(out_dir / name).convert("RGB")
+              corners = (check.getpixel((0, 0)), check.getpixel((91, 0)),
+                         check.getpixel((0, 63)), check.getpixel((91, 63)))
+              if any(pixel != (0, 0, 0) for pixel in corners):
+                  raise SystemExit("Icon background regression: " + name)
+
+          print(f"Prepared black-background G3A icon from {source}: {size[0]}x{size[1]}")
           PY
 
       - name: Restore fxSDK toolchain cache
@@ -98,22 +105,14 @@ jobs:
           set -euo pipefail
           export PATH="$HOME/.local/bin:$PATH"
 
-          # GNU mirrors occasionally return a tiny HTML error page while
-          # GiteaPC expects an xz archive. After a failed attempt, validate and
-          # pre-seed both GNU archives from the primary server before retrying.
           ensure_xz_archive() {
             local url="$1"
             local destination="$2"
             local temporary="${destination}.tmp"
-
-            if xz -t "$destination" >/dev/null 2>&1; then
-              return 0
-            fi
-
+            if xz -t "$destination" >/dev/null 2>&1; then return 0; fi
             rm -f "$destination" "$temporary"
             mkdir -p "$(dirname "$destination")"
-            curl --fail --location \
-              --retry 5 --retry-delay 10 --retry-all-errors \
+            curl --fail --location --retry 5 --retry-delay 10 --retry-all-errors \
               --connect-timeout 30 "$url" -o "$temporary"
             xz -t "$temporary"
             mv "$temporary" "$destination"
@@ -123,23 +122,15 @@ jobs:
             local attempt
             local binutils_root="$HOME/.local/share/giteapc/Lephenixnoir/sh-elf-binutils"
             local gcc_root="$HOME/.local/share/giteapc/Lephenixnoir/sh-elf-gcc"
-
             for attempt in 1 2 3; do
-              if printf '\n' | giteapc install "$@"; then
-                return 0
-              fi
-
+              if printf '\n' | giteapc install "$@"; then return 0; fi
               echo "GiteaPC attempt $attempt failed; repairing GNU archives"
               rm -rf "$binutils_root/binutils-2.42" "$gcc_root/gcc-14.1.0"
-              ensure_xz_archive \
-                "https://ftp.gnu.org/gnu/binutils/binutils-2.42.tar.xz" \
+              ensure_xz_archive "https://ftp.gnu.org/gnu/binutils/binutils-2.42.tar.xz" \
                 "$binutils_root/binutils-2.42.tar.xz"
-              ensure_xz_archive \
-                "https://ftp.gnu.org/gnu/gcc/gcc-14.1.0/gcc-14.1.0.tar.xz" \
+              ensure_xz_archive "https://ftp.gnu.org/gnu/gcc/gcc-14.1.0/gcc-14.1.0.tar.xz" \
                 "$gcc_root/gcc-14.1.0.tar.xz"
-              if [ "$attempt" -lt 3 ]; then
-                sleep $((attempt * 10))
-              fi
+              if [ "$attempt" -lt 3 ]; then sleep $((attempt * 10)); fi
             done
             return 1
           }
@@ -152,15 +143,10 @@ jobs:
           install_with_retry Lephenixnoir/sh-elf-gcc
           install_with_retry Lephenixnoir/gint
 
-          # JustUI currently references font_t.line_distance, which was
-          # removed from the current gint C font structure. Fetch JustUI
-          # through GiteaPC, then patch the two affected references to the
-          # current line_height member before rebuilding/installing it.
           set +e
           printf '\n' | giteapc install Lephenixnoir/JustUI
           justui_rc=$?
           set -e
-
           JUSTUI_DIR="$HOME/.local/share/giteapc/Lephenixnoir/JustUI"
           if [ "$justui_rc" -ne 0 ]; then
             test -f "$JUSTUI_DIR/src/jlabel.c"
@@ -174,29 +160,18 @@ jobs:
         run: |
           set -euo pipefail
           export PATH="$HOME/.local/bin:$PATH"
-
-          # Apply only upstream's verified one-file display change to the
-          # known-good gint baseline. The patch selects the new 0x2a/0x2b/0x2c
-          # protocol only for controller versions 50 and 82; all older
-          # controllers retain the established R61524 update sequence.
           GINT_BASE=badbd0fd2bd8ac796fd55d49b93691741bd8a139
           GINT_DISPLAY_COMMIT=27000967d72d16f92ab54e7a10c7505ef85e2e85
           GINT_DIR="$(giteapc show -p Lephenixnoir/gint)"
-          git -C "$GINT_DIR" restore --source="$GINT_BASE" --worktree --staged \
-            src/r61524/r61524.c
+          git -C "$GINT_DIR" restore --source="$GINT_BASE" --worktree --staged src/r61524/r61524.c
           git -C "$GINT_DIR" checkout --detach "$GINT_BASE"
           git -C "$GINT_DIR" diff "$GINT_DISPLAY_COMMIT^" "$GINT_DISPLAY_COMMIT" \
             -- src/r61524/r61524.c > /tmp/gint-new-display.patch
           git -C "$GINT_DIR" apply --check /tmp/gint-new-display.patch
           git -C "$GINT_DIR" apply /tmp/gint-new-display.patch
           git -C "$GINT_DIR" diff --check
-          grep -q 'version == 50 || version == 82' \
-            "$GINT_DIR/src/r61524/r61524.c"
-          (
-            cd "$GINT_DIR"
-            fxsdk build-cg
-            fxsdk build-cg install
-          )
+          grep -q 'version == 50 || version == 82' "$GINT_DIR/src/r61524/r61524.c"
+          ( cd "$GINT_DIR"; fxsdk build-cg; fxsdk build-cg install )
           test "$(git -C "$GINT_DIR" rev-parse HEAD)" = "$GINT_BASE"
 
       - name: Save fxSDK toolchain cache
@@ -231,9 +206,6 @@ jobs:
           git -C "$GINT_DIR" log --all --date=iso --pretty=format:'%H %ad %s' \
             --regexp-ignore-case --grep='display\|r61524\|cg50\|fx-cg' \
             > build-info/gint-display-history.txt
-
-          # Export the exact upstream newer-display changes for review before
-          # changing the dependency revision used by the known-good build.
           for commit in \
             27000967d72d16f92ab54e7a10c7505ef85e2e85 \
             31f2506e3b94cd8332b97a519471017e52e374d6 \
@@ -242,14 +214,13 @@ jobs:
             git -C "$GINT_DIR" show --format=fuller --stat --patch "$commit" \
               > "$GITHUB_WORKSPACE/build-info/gint-$commit.patch"
           done
-
           {
             for older in \
               27000967d72d16f92ab54e7a10c7505ef85e2e85 \
               31f2506e3b94cd8332b97a519471017e52e374d6
             do
-              if git -C "$GINT_DIR" merge-base --is-ancestor \
-                "$older" 982055c999bdd0d73d23dad7c75ad5bd87b22922
+              if git -C "$GINT_DIR" merge-base --is-ancestor "$older" \
+                982055c999bdd0d73d23dad7c75ad5bd87b22922
               then
                 echo "$older is an ancestor of 982055c999bdd0d73d23dad7c75ad5bd87b22922"
               else
@@ -278,26 +249,25 @@ jobs:
 
           g3a = Path("ports/fxcg50/PythonUltra.g3a")
           data = g3a.read_bytes()
-
           if len(data) < 100_000:
               raise SystemExit(f"G3A is unexpectedly small: {len(data)} bytes")
           if len(data) >= 2_000_000:
               raise SystemExit(f"G3A exceeds the 2 MB target: {len(data)} bytes")
 
-          # Static smoke checks cannot replace calculator testing, but they do
-          # catch stripped or mispackaged builds before publishing an artifact.
           required = {
               b"PythonUltra": "application identity",
               b"*** SHELL INITIALIZED ***": "interactive REPL",
               b"dtriangle": "native triangle binding",
               b"numpy": "compact numeric module",
-              b"matmul": "matrix multiplication helper",
-              b"normalize": "vector normalization helper",
-              b"listdir": "calculator os filesystem module",
+              b"matrix": "NumPy matrix compatibility",
               b"pygame": "pygame compatibility package",
-              b"Surface": "pygame surfaces",
-              b"Clock": "pygame frame clock",
-              b"spritecollide": "pygame sprite collisions",
+              b"py3d": "software 3D package",
+              b"pyeditor": "text editor",
+              b"pyfiles": "file manager",
+              b"pyterm": "terminal command layer",
+              b"zipfile": "ZIP support",
+              b"catalog_ui": "modal F3 catalog",
+              b"info_ui": "F6 build info",
           }
           missing = [label for marker, label in required.items() if marker not in data]
           if missing:
@@ -308,11 +278,12 @@ jobs:
               print(f"  present: {label}")
           PY
 
-      - name: Upload G3A
+      - name: Upload G3A and guide
         uses: actions/upload-artifact@v4
         with:
           name: PythonUltra-CG50
           path: |
             ports/fxcg50/PythonUltra.g3a
+            ports/sh/PythonUltra_User_Guide.txt
             build-info/
           if-no-files-found: error
