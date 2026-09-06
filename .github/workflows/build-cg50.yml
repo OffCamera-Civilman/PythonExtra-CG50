@@ -9,6 +9,7 @@ on:
       - "py/**"
       - "extmod/**"
       - "shared/**"
+      - "tests/**"
       - ".github/workflows/build-cg50.yml"
   workflow_dispatch:
 
