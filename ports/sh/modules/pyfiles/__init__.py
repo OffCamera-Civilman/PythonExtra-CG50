@@ -5,7 +5,7 @@ import os
 import sys
 import pyperm
 
-__version__ = "0.3.0-cg50"
+__version__ = "0.3.1-cg50"
 
 SCREEN_W = 396
 SCREEN_H = 224
@@ -116,7 +116,8 @@ class Browser:
             g.dtext(6, y + 1, fg, (marker + name)[:46])
         y = SCREEN_H - NAV_H
         g.drect(0, y, SCREEN_W - 1, SCREEN_H - 1, p[2])
-        for i, label in enumerate(("Run", "Edit", "New", "Rename", "Delete", "More")):
+        # Compact labels are deliberately kept inside six 66-pixel slots.
+        for i, label in enumerate(("RUN", "EDIT", "NEW", "REN", "DEL", "EDTR")):
             g.dtext(2 + i * 66, y + 1, p[3], "F%d:%s" % (i + 1, label))
         g.dupdate()
 
@@ -200,6 +201,16 @@ class Browser:
             if result == "run" and path.lower().endswith(".py"): self.run_file(path)
             self.refresh()
         except Exception as exc: self.msg = "Edit " + str(exc)[:12]
+
+    def open_editor(self):
+        """Open the editor directly from F6, independent of file selection."""
+        try:
+            result = self.pyeditor.new_file(_join(self.folder, "new.py"), self.theme_name)
+            if result == "run":
+                self.run_file(_join(self.folder, "new.py"))
+            self.refresh()
+        except Exception as exc:
+            self.msg = "Editor " + str(exc)[:10]
 
     def create_new(self):
         kind = self.popup("New", ("File", "Folder", "Cancel"))
@@ -323,7 +334,8 @@ class Browser:
             elif key == g.KEY_F3: self.create_new()
             elif key == g.KEY_F4: self.rename_selected()
             elif key == g.KEY_F5: self.delete_selected()
-            elif key == g.KEY_F6:
+            elif key == g.KEY_F6: self.open_editor()
+            elif key == g.KEY_OPTN:
                 if self.more_menu() == "exit": return
             elif key == g.KEY_EXIT:
                 if self.folder != "/":
