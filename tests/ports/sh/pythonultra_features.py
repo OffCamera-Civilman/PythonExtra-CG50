@@ -30,9 +30,11 @@ main = (SH / "main.c").read_text(encoding="utf-8")
 widget = (SH / "widget_shell.c").read_text(encoding="utf-8")
 config = (SH / "mpconfigport.h").read_text(encoding="utf-8")
 manifest = (SH / "manifest.py").read_text(encoding="utf-8")
+modgint = (SH / "modgint.c").read_text(encoding="utf-8")
 pyterm = (MODULES / "pyterm" / "__init__.py").read_text(encoding="utf-8")
 pyfiles = (MODULES / "pyfiles" / "__init__.py").read_text(encoding="utf-8")
 pyeditor = (MODULES / "pyeditor" / "__init__.py").read_text(encoding="utf-8")
+pyperm = (MODULES / "pyperm" / "__init__.py").read_text(encoding="utf-8")
 
 assert "pythonultra_help_text" in main
 assert "MICROPY_PY_BUILTINS_HELP_TEXT     pythonultra_help_text" in config
@@ -41,17 +43,29 @@ assert "key == KEY_F4" in main and "pe_apply_theme()" in main
 assert "key == KEY_F5" in main and "pyeditor" in main
 assert "key == KEY_F6" in main and "_pu.info_ui(" in main
 assert "pe_terminal_dispatch" in main and "MP_QSTR_pyterm" in main
+assert "pe_terminal_startup" in main and "pe_apply_terminal_font" in main
 assert "widget_shell_history_recall" in widget
 assert "widget_shell_history_push" in widget
+assert "modgint_dfont_size" in modgint and "OBJ(dfont_size)" in modgint
 assert 'freeze("modules", "pythonultra", opt=3)' in manifest
 assert 'freeze("modules", "pyeditor", opt=3)' in manifest
 assert 'freeze("modules", "pyfiles", opt=3)' in manifest
+assert 'freeze("modules", "pyperm", opt=3)' in manifest
 assert 'freeze("modules", "pyterm", opt=3)' in manifest
 assert 'freeze("modules", "zipfile", opt=3)' in manifest
 assert 'args[0] in ("-h", "--help")' in pyterm and "def dispatch(" in pyterm
 assert 'endswith("--h")' not in pyterm
 assert "zip" in pyterm and "unzip" in pyterm
+assert '"chmod"' in pyterm and "pyperm.chmod" in pyterm
+assert 'RC_PATH = "/.pythonultrarc"' in pyterm
+assert 'HISTORY_PATH = "/.pythonultra_history"' in pyterm
+assert '"alias"' in pyterm and '"history"' in pyterm and '"font"' in pyterm
+assert 'cmd.startswith("./")' in pyterm and "require_execute" in pyterm
 assert "create_new" in pyfiles and "rename_selected" in pyfiles and "delete_selected" in pyfiles
+assert "permission_menu" in pyfiles and "pyperm.require_write" in pyfiles
 assert "GitHub Dark" in pyeditor and "GitHub Light" in pyeditor and "Linux" in pyeditor
+assert "set_font_size" in pyeditor and "pyperm.require_write" in pyeditor
+assert 'DB_PATH = "/.pythonultra_permissions"' in pyperm
+assert "def format_mode" in pyperm and "def executable" in pyperm
 
 print("PythonUltra feature regression checks passed")
