@@ -8,7 +8,7 @@ small-memory theme system.
 import gc
 import sys
 
-__version__ = "0.2.0-cg50"
+__version__ = "0.2.1-cg50"
 
 SCREEN_W = 396
 SCREEN_H = 224
@@ -42,7 +42,13 @@ BUILTINS = {"abs", "all", "any", "bin", "bool", "bytearray", "bytes", "callable"
 TYPES = {"int", "float", "str", "bool", "bytes", "bytearray", "list", "dict", "tuple", "set"}
 MODULES = {"builtins", "gint", "numpy", "pygame", "py3d", "pythonultra", "pyeditor", "pyfiles", "ctypes", "os", "json", "time", "math", "random", "sys", "io", "struct", "array", "collections", "casioplot", "kandinsky", "ion"}
 OPERATORS = "+-*/%=<>|&^~"
-SYMBOLS = ("_", ".", ",", ":", ";", "!", "?", "@", "#", "%", "&", "*", "~", "(", ")", "[", "]", "{", "}", "=", "+", "-", "/", "\\", "|", "^", "<", ">", "'", '"')
+
+# Build punctuation at runtime. This avoids MicroPython QSTR-safe names such as
+# _hyphen_ or _paren_open_ leaking into popup text on hardware.
+_SYMBOL_CODES = (95, 46, 44, 58, 59, 33, 63, 64, 35, 36, 37, 38, 42, 126,
+                 40, 41, 91, 93, 123, 125, 61, 43, 45, 47, 92, 124, 94, 60,
+                 62, 39, 34, 96)
+SYMBOLS = tuple(chr(code) for code in _SYMBOL_CODES)
 
 
 def themes():
@@ -52,6 +58,28 @@ def themes():
 def _gint():
     import gint
     return gint
+
+
+def _is_alpha(ch):
+    return len(ch) == 1 and (("a" <= ch <= "z") or ("A" <= ch <= "Z"))
+
+
+def _is_digit(ch):
+    return len(ch) == 1 and "0" <= ch <= "9"
+
+
+def _is_alnum(ch):
+    return _is_alpha(ch) or _is_digit(ch)
+
+
+def _raw_key(g):
+    """Read a key without gint consuming SHIFT/ALPHA as modifiers."""
+    try:
+        opts = g.GETKEY_DEFAULT & ~(g.GETKEY_MOD_SHIFT | g.GETKEY_MOD_ALPHA)
+        return g.getkey_opt(opts, None).key
+    except Exception:
+        # Older compatible builds can still fall back to getkey().
+        return g.getkey().key
 
 
 def _maps(g):
@@ -145,7 +173,7 @@ class Editor:
         if token in BUILTINS: return p[BUILTIN]
         if token in TYPES: return p[TYPE]
         if token in MODULES: return p[BUILTIN]
-        if token and token[0].isdigit(): return p[NUMBER]
+        if token and _is_digit(token[0]): return p[NUMBER]
         if first in OPERATORS: return p[KEYWORD]
         return p[FG]
 
@@ -167,18 +195,17 @@ class Editor:
                         j += 1
                         break
                     j += 1
-            elif c.isalpha() or c == "_":
-                while j < limit and (text[j].isalnum() or text[j] == "_"):
+            elif _is_alpha(c) or c == "_":
+                while j < limit and (_is_alnum(text[j]) or text[j] == "_"):
                     j += 1
-            elif c.isdigit():
-                while j < limit and (text[j].isdigit() or text[j] == "."):
+            elif _is_digit(c):
+                while j < limit and (_is_digit(text[j]) or text[j] == "."):
                     j += 1
             elif c == "@":
-                while j < limit and (text[j].isalnum() or text[j] in "_."):
+                while j < limit and (_is_alnum(text[j]) or text[j] in "_."):
                     j += 1
             token = text[i:j]
             color = self._token_color(token, c)
-            # Visual selection is rendered one character at a time only when active.
             if self.mode == "VISUAL" and self.sel_start:
                 a = self.sel_start
                 b = (self.cy, self.cx)
@@ -241,7 +268,7 @@ class Editor:
             g.drect_border(20, 80, 376, 116, p[BORDER], 2, p[BG])
             g.dtext(28, 89, p[FG], (prompt + ": " + text + "_")[-43:])
             g.dupdate()
-            k = g.getkey().key
+            k = _raw_key(g)
             if k == g.KEY_EXIT:
                 return None
             if k == g.KEY_EXE:
@@ -398,7 +425,7 @@ class Editor:
         g = self.g
         while True:
             self.draw()
-            k = g.getkey().key
+            k = _raw_key(g)
             if k == g.KEY_F1:
                 if self.run_code():
                     return "run"
