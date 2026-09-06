@@ -5,7 +5,7 @@ import os
 import sys
 import pyperm
 
-__version__ = "0.4.1-cg50"
+__version__ = "0.5.0-cg50"
 
 SCREEN_W = 396
 SCREEN_H = 224
@@ -93,6 +93,9 @@ class Browser:
         self.selected = 0
         self.scroll = 0
         self.msg = ""
+        self.marked = set()
+        self.sort_mode = "Name A-Z"
+        self.last_search = ""
         self.refresh()
 
     def refresh(self):
@@ -102,8 +105,16 @@ class Browser:
         dirs, files = [], []
         for name in names:
             (dirs if _is_dir(_join(self.folder, name)) else files).append(name)
-        dirs.sort(); files.sort()
-        self.entries = [(name, True) for name in dirs] + [(name, False) for name in files]
+        reverse = self.sort_mode == "Name Z-A"
+        dirs.sort(reverse=reverse); files.sort(reverse=reverse)
+        if self.sort_mode == "Files first":
+            self.entries = [(name, False) for name in files] + [(name, True) for name in dirs]
+        else:
+            self.entries = [(name, True) for name in dirs] + [(name, False) for name in files]
+        kept = set()
+        for name in self.marked:
+            if name in names: kept.add(name)
+        self.marked = kept
         if self.entries: self.selected = max(0, min(self.selected, len(self.entries) - 1))
         else: self.selected = 0
         self.scroll = max(0, min(self.scroll, max(0, len(self.entries) - VISIBLE)))
@@ -126,19 +137,22 @@ class Browser:
             g.drect_border(x0 + 1, y, x1 - 1, SCREEN_H - 1, p[13], 1, p[2])
             label = labels[i] if i < len(labels) else ""
             if label:
-                g.dtext(x0 + 5, y + 1, p[3], label[:7])
+                label = label[:7]
+                x = x0 + max(3, (64 - len(label) * 8) // 2)
+                g.dtext(x, y + 1, p[3], label)
 
     def draw(self):
         g, p = self.g, self.palette
         g.dclear(p[0])
         g.drect(0, 0, SCREEN_W - 1, HEADER_H - 1, p[2])
-        title = "FILES " + self.folder
+        title = "Files " + self.folder
         if self.msg: title += "  " + self.msg
         selected = self.selected_entry()
         hint = "EXE:INFO"
         if selected and selected[1]: hint = "EXE:OPEN"
+        if self.marked: hint = str(len(self.marked)) + " SELECT"
         g.dtext(4, 3, p[3], title[:35])
-        g.dtext(314, 3, p[3], hint)
+        g.dtext(314, 3, p[3], hint[:10])
         if self.selected < self.scroll: self.scroll = self.selected
         if self.selected >= self.scroll + VISIBLE: self.scroll = self.selected - VISIBLE + 1
         for row in range(VISIBLE):
@@ -150,9 +164,12 @@ class Browser:
             bg = p[4] if sel else p[0]
             fg = p[5] if sel else p[1]
             g.drect(2, y, SCREEN_W - 3, y + ROW_H - 1, bg)
-            marker = "[D] " if is_dir else ("[Z] " if name.lower().endswith(".zip") else "    ")
+            if name in self.marked:
+                marker = "[*] "
+            else:
+                marker = "[D] " if is_dir else ("[Z] " if name.lower().endswith(".zip") else "    ")
             g.dtext(6, y + 1, fg, (marker + name)[:46])
-        self.draw_softkeys(("RUN", "EDIT", "NEW", "REN", "DEL", "EDTR"))
+        self.draw_softkeys(("SELECT", "SEQ", "SEARCH", "NEW", "RENAME", "MORE"))
         g.dupdate()
 
     def popup(self, title, items):
@@ -190,6 +207,46 @@ class Browser:
             else: char = base.get(key)
             if char: text += char
             if shift_on: shift_on = False
+
+    def toggle_selected(self):
+        entry = self.selected_entry()
+        if not entry: return
+        name = entry[0]
+        if name in self.marked:
+            self.marked.remove(name)
+        else:
+            self.marked.add(name)
+        self.msg = str(len(self.marked)) + " selected" if self.marked else "Selection clear"
+
+    def sequence_menu(self):
+        choice = self.popup("Sequence", ("Name A-Z", "Name Z-A", "Files first", "Cancel"))
+        if not choice or choice == "Cancel": return
+        self.sort_mode = choice
+        self.selected = self.scroll = 0
+        self.msg = choice
+        self.refresh()
+
+    def search_menu(self):
+        query = self.input_bar("Search", self.last_search)
+        if query is None: return
+        query = query.strip()
+        if not query:
+            self.msg = "Search empty"; return
+        self.last_search = query
+        q = query.lower()
+        matches = []
+        for name, is_dir in self.entries:
+            if q in name.lower(): matches.append(name)
+        if not matches:
+            self.msg = "No matches"; return
+        choice = self.popup("Search " + query[:18], matches)
+        if not choice: return
+        for idx, entry in enumerate(self.entries):
+            if entry[0] == choice:
+                self.selected = idx
+                self.scroll = max(0, min(idx, max(0, len(self.entries) - VISIBLE)))
+                self.msg = str(len(matches)) + " match" + ("es" if len(matches) != 1 else "")
+                return
 
     def text_viewer(self, path):
         g, p = self.g, self.palette
@@ -257,7 +314,6 @@ class Browser:
         except Exception as exc:
             print("Checksum error:", repr(exc)); self.msg = "Hash error"; return
         while True:
-            # Keep the file-information page visible behind the checksum modal.
             self._draw_file_info(path, st)
             g.drect(64, 45, 369, 184, p[2])
             g.drect_border(58, 39, 363, 178, p[13], 2, p[0])
@@ -307,7 +363,12 @@ class Browser:
         if not entry: return
         name, is_dir = entry; path = _join(self.folder, name)
         if is_dir:
-            self.folder = path; self.selected = self.scroll = 0; self.msg = ""; self.refresh(); return
+            self.folder = path
+            self.selected = self.scroll = 0
+            self.marked.clear()
+            self.msg = ""
+            self.refresh()
+            return
         self.file_info(path)
 
     def run_file(self, path=None):
@@ -368,26 +429,49 @@ class Browser:
     def rename_selected(self):
         path = self.selected_path()
         if not path: return
+        if len(self.marked) > 1:
+            self.msg = "Rename one item"; return
         old = _basename(path); new = self.input_bar("Rename", old)
         if not new or new == old: return
         dest = _join(self.folder, new)
         if _exists(dest): self.msg = "Name exists"; return
         try:
             pyperm.require_write(path)
-            os.rename(path, dest); pyperm.move(path, dest); self.msg = "Renamed"; self.refresh()
+            os.rename(path, dest); pyperm.move(path, dest)
+            if old in self.marked:
+                self.marked.remove(old); self.marked.add(new)
+            self.msg = "Renamed"; self.refresh()
         except OSError as exc: self.msg = "Rename " + str(exc)[:12]
 
     def delete_selected(self):
-        entry = self.selected_entry(); path = self.selected_path()
-        if not entry or not path: return
-        name, is_dir = entry
-        if self.popup("Delete " + name[:18], ("Cancel", "DELETE")) != "DELETE": return
-        try:
-            pyperm.require_write(path)
-            if is_dir: os.rmdir(path)
-            else: os.remove(path)
-            pyperm.remove(path); self.msg = "Deleted"; self.refresh()
-        except OSError as exc: self.msg = "Delete " + str(exc)[:12]
+        targets = []
+        if self.marked:
+            for name in self.marked:
+                for entry_name, is_dir in self.entries:
+                    if entry_name == name:
+                        targets.append((entry_name, is_dir)); break
+        else:
+            entry = self.selected_entry()
+            if entry: targets.append(entry)
+        if not targets: return
+        label = str(len(targets)) + " selected" if len(targets) > 1 else targets[0][0][:18]
+        if self.popup("Delete " + label, ("Cancel", "DELETE")) != "DELETE": return
+        deleted = 0
+        failed = 0
+        for name, is_dir in targets:
+            path = _join(self.folder, name)
+            try:
+                pyperm.require_write(path)
+                if is_dir: os.rmdir(path)
+                else: os.remove(path)
+                pyperm.remove(path)
+                deleted += 1
+            except OSError as exc:
+                print("Delete error:", name, repr(exc)); failed += 1
+        self.marked.clear()
+        self.msg = "Deleted " + str(deleted)
+        if failed: self.msg += ", fail " + str(failed)
+        self.refresh()
 
     def permission_menu(self, path=None):
         path = path or self.selected_path()
@@ -437,14 +521,19 @@ class Browser:
 
     def more_menu(self):
         choice = self.popup("More", (
-            "File information", "Up one folder", "Permissions", "Compress to ZIP", "Extract ZIP", "Theme",
+            "File information", "Run file", "Edit file", "Delete selected", "New editor",
+            "Up one folder", "Permissions", "Compress to ZIP", "Extract ZIP", "Theme",
             "PythonUltra Info", "Refresh", "Exit Files"))
         if choice == "File information":
             path = self.selected_path()
             if path and not _is_dir(path): self.file_info(path)
             else: self.msg = "Select file"
+        elif choice == "Run file": self.run_file()
+        elif choice == "Edit file": self.edit_file()
+        elif choice == "Delete selected": self.delete_selected()
+        elif choice == "New editor": self.open_editor()
         elif choice == "Up one folder":
-            self.folder = _parent(self.folder); self.selected = self.scroll = 0; self.refresh()
+            self.folder = _parent(self.folder); self.selected = self.scroll = 0; self.marked.clear(); self.refresh()
         elif choice == "Permissions": self.permission_menu()
         elif choice == "Compress to ZIP": self.compress_selected()
         elif choice == "Extract ZIP": self.extract_selected()
@@ -467,18 +556,19 @@ class Browser:
             elif key == g.KEY_DOWN and self.entries: self.selected = min(len(self.entries) - 1, self.selected + 1)
             elif key in (g.KEY_EXE, g.KEY_RIGHT): self.enter_selected()
             elif key == g.KEY_LEFT:
-                self.folder = _parent(self.folder); self.selected = self.scroll = 0; self.refresh()
-            elif key == g.KEY_F1: self.run_file()
-            elif key == g.KEY_F2: self.edit_file()
-            elif key == g.KEY_F3: self.create_new()
-            elif key == g.KEY_F4: self.rename_selected()
-            elif key == g.KEY_F5: self.delete_selected()
-            elif key == g.KEY_F6: self.open_editor()
+                self.folder = _parent(self.folder); self.selected = self.scroll = 0; self.marked.clear(); self.refresh()
+            elif key == g.KEY_F1: self.toggle_selected()
+            elif key == g.KEY_F2: self.sequence_menu()
+            elif key == g.KEY_F3: self.search_menu()
+            elif key == g.KEY_F4: self.create_new()
+            elif key == g.KEY_F5: self.rename_selected()
+            elif key == g.KEY_F6:
+                if self.more_menu() == "exit": return
             elif key == g.KEY_OPTN:
                 if self.more_menu() == "exit": return
             elif key == g.KEY_EXIT:
                 if self.folder != "/":
-                    self.folder = _parent(self.folder); self.selected = self.scroll = 0; self.refresh()
+                    self.folder = _parent(self.folder); self.selected = self.scroll = 0; self.marked.clear(); self.refresh()
                 else: return
 
 
