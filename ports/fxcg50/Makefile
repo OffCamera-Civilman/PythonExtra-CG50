@@ -20,7 +20,7 @@ pythonultra-runtime-fixes:
 	python3 ../sh/apply_pythonultra_features.py
 	python3 ../sh/apply_pythonultra_ui2.py
 	python3 ../sh/apply_pythonultra_permissions.py
-	python3 ../sh/apply_pythonultra_ui3.py
+	python3 ../sh/apply_pythonultra_ui3_compat.py
 	python3 ../sh/apply_pythonultra_symbols.py
 	python3 -m py_compile \
 		../sh/modules/pythonultra/__init__.py \
