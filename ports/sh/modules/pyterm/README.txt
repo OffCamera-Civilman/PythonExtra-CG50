@@ -10,7 +10,6 @@ Command help forms:
   man python
   python -h
   python --help
-  python--h
   COMMAND -h
   COMMAND --help
 
