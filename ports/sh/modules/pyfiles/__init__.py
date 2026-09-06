@@ -5,7 +5,7 @@ import os
 import sys
 import pyperm
 
-__version__ = "0.3.1-cg50"
+__version__ = "0.3.2-cg50"
 
 SCREEN_W = 396
 SCREEN_H = 224
@@ -100,7 +100,10 @@ class Browser:
         g.drect(0, 0, SCREEN_W - 1, HEADER_H - 1, p[2])
         title = "FILES " + self.folder
         if self.msg: title += "  " + self.msg
-        g.dtext(4, 3, p[3], title[:47])
+        selected = self.selected_entry()
+        hint = "EXE:UNZIP" if selected and (not selected[1]) and selected[0].lower().endswith(".zip") else "OPTN:MORE"
+        g.dtext(4, 3, p[3], title[:35])
+        g.dtext(308, 3, p[3], hint)
         if self.selected < self.scroll: self.scroll = self.selected
         if self.selected >= self.scroll + VISIBLE: self.scroll = self.selected - VISIBLE + 1
         for row in range(VISIBLE):
@@ -116,7 +119,6 @@ class Browser:
             g.dtext(6, y + 1, fg, (marker + name)[:46])
         y = SCREEN_H - NAV_H
         g.drect(0, y, SCREEN_W - 1, SCREEN_H - 1, p[2])
-        # Compact labels are deliberately kept inside six 66-pixel slots.
         for i, label in enumerate(("RUN", "EDIT", "NEW", "REN", "DEL", "EDTR")):
             g.dtext(2 + i * 66, y + 1, p[3], "F%d:%s" % (i + 1, label))
         g.dupdate()
@@ -134,8 +136,9 @@ class Browser:
             self.draw(); p = self.palette
             g.drect(18, 78, 378, 116, p[0])
             g.drect_border(18, 78, 378, 116, p[13], 2, p[0])
-            g.dtext(26, 88, p[1], (prompt + ": " + text + "_")[-44:])
-            g.dupdate(); key = g.getkey().key
+            mod = "A" if alpha_mode == 2 else ("a" if alpha_mode else "1")
+            g.dtext(26, 88, p[1], ("[" + mod + "] " + prompt + ": " + text + "_")[-44:])
+            g.dupdate(); key = self.pyeditor._raw_key(g)
             if key == g.KEY_EXIT: return None
             if key == g.KEY_EXE: return text
             if key == g.KEY_SHIFT: shift_on = not shift_on; continue
@@ -177,8 +180,6 @@ class Browser:
             self.msg = "Run needs .py"; return
         old_path = list(sys.path)
         try:
-            # Like `python file.py` on Linux, interpreter execution needs read,
-            # not execute, permission. Direct ./file.py is handled in pyterm.
             pyperm.require_read(path)
             folder = path.rsplit("/", 1)[0] or "/"
             if folder not in sys.path: sys.path.insert(0, folder)
@@ -203,7 +204,6 @@ class Browser:
         except Exception as exc: self.msg = "Edit " + str(exc)[:12]
 
     def open_editor(self):
-        """Open the editor directly from F6, independent of file selection."""
         try:
             result = self.pyeditor.new_file(_join(self.folder, "new.py"), self.theme_name)
             if result == "run":
