@@ -12,18 +12,27 @@ Reconciled on 2026-09-07 against source, build patches, tests, commit history th
 
 ## Current correction release
 
+Candidate **run #130** passed GitHub Actions on 2026-09-07, commit
+`c6b74e611d62abd3041f604d835a253230ccb027`.
+Download: `PythonUltra-CG50-run130.g3a`, **445,648 bytes**.
+SHA-256: `f0840f862598fb47e53382de18fe013e505c2c9aa2c4f6b1a426bd9bf1537bad`.
+[Build and artifact](https://github.com/OffCamera-Civilman/PythonExtra-CG50/actions/runs/34140659391).
+Editor/ZIP/RC/Catalog/color/timestamp regressions and native seek/tell tests pass;
+the ZIP round-trip and editor/RC scenario also passed in a real MicroPython host
+interpreter. **Hardware confirmation of these corrections remains open.**
+
 | Item | Status | Evidence / acceptance gate |
 | --- | --- | --- |
 | Editor proportional-font spacing and small/normal/large layout | Active fix | Photos show gaps/clipped bars. Measure gint glyph advances, keep chrome small, verify all sizes on hardware. |
 | Editor ALPHA/SHIFT, filename/search/symbol popup input and safe launch/return | Active fix | `7c88b79` changed the handoff to raw events; editor opens in current photos. Verify typing/modifiers and repeated enter/exit. |
 | Editor New/Open/Save/Find/Run, multiline clipboard | Active fix | Preserve buffers on failed open/save, prevent existing-file overwrite by New, and execute Run only once. |
-| Standard ZIP create/extract | Active fix | User gets `ValueError('truncated ZIP')` on PythonUltra-created archives. `fdfile.c` lacks seek/tell; repair and test files, nested folders, CRC and error cleanup. Old malformed archives may need recreating from their originals. |
-| RC-controlled startup | Active fix | Files is currently unconditional. Missing setting -> Files; `set startup=files` -> Files; `set startup=terminal` -> Terminal. |
+| Standard ZIP create/extract | Candidate fixed; verify hardware | User reported `ValueError('truncated ZIP')`. The no-op native seek/tell implementation is replaced; tests cover files, nested folders, CRC, failed-output cleanup and preservation of existing destinations. Old malformed archives may need recreating from their originals. |
+| RC-controlled startup | Candidate fixed; verify hardware | The unconditional Files launcher is removed. Missing setting -> Files; `set startup=files` -> Files; `set startup=terminal` -> Terminal. |
 | Catalog insertion into terminal/editor | Active fix | F3 discarded the selection; editor inserted only an unqualified member. Insert e.g. `numpy.array` at the cursor, preserve existing input, cancel without insertion, and never execute automatically. Verify EXE/numbered choices on hardware. |
 | Configurable menu border color | Implemented in correction candidate; verify | `set menu_border=cyan`, `#RRGGBB` or RGB565 `0x07ff` in RC; missing/invalid setting defaults to current cyan. Test reload, Catalog/Files dialogs and editor popup borders. |
 | File information Modified field | Active fix | User photo shows an implausible integer. Initialize native stat fields, display a valid stored date/time or Unavailable, and complete the clock/timestamp work below. |
 | Filesystem reset regressions | Active fix / verify | World-switch corrections exist (`aa09418`, `c447fca`, `d38dcac`). Retest ls/listdir, mkdir, rename/move, remove/rmdir, stat and ZIP on both revisions. |
-| Numbered deliverables | Remaining release packaging | Every downloadable binary must be `PythonUltra-CG50-runNNN.g3a`; do not call every successful run hardware-verified. |
+| Numbered deliverables | Implemented | Run #130 uploads `PythonUltra-CG50-run130.g3a` with a checksum and source commit; continue this naming for future runs. |
 
 ## Already built — do not schedule from scratch
 
