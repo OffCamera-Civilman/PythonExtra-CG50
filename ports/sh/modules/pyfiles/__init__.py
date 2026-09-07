@@ -5,7 +5,7 @@ import os
 import sys
 import pyperm
 
-__version__ = "0.5.0-cg50"
+__version__ = "0.6.0-cg50"
 
 SCREEN_W = 396
 SCREEN_H = 224
@@ -13,6 +13,7 @@ HEADER_H = 18
 NAV_H = 13
 ROW_H = 13
 VISIBLE = (SCREEN_H - HEADER_H - NAV_H) // ROW_H
+COPY_CHUNK = 1024
 
 TEXT_EXTENSIONS = (
     ".py", ".txt", ".md", ".csv", ".json", ".ini", ".cfg", ".log",
@@ -81,6 +82,54 @@ def _mode_string(path):
     except Exception: return "---"
 
 
+def _remove_tree(path):
+    """Best-effort cleanup used only for destinations created by copy."""
+    try:
+        if _is_dir(path):
+            for name in os.listdir(path):
+                _remove_tree(_join(path, name))
+            os.rmdir(path)
+        elif _exists(path):
+            os.remove(path)
+        pyperm.remove(path)
+    except Exception:
+        pass
+
+
+def _copy_file(src, dst):
+    pyperm.require_read(src)
+    mode = pyperm.get_mode(src, False)
+    try:
+        with open(src, "rb") as source:
+            with open(dst, "wb") as target:
+                while True:
+                    chunk = source.read(COPY_CHUNK)
+                    if not chunk: break
+                    target.write(chunk)
+        try: pyperm.chmod(dst, mode)
+        except Exception: pass
+    except Exception:
+        _remove_tree(dst)
+        raise
+
+
+def _copy_tree(src, dst):
+    pyperm.require_read(src)
+    mode = pyperm.get_mode(src, True)
+    try:
+        os.mkdir(dst)
+        try: pyperm.chmod(dst, mode)
+        except Exception: pass
+        for name in os.listdir(src):
+            child_src = _join(src, name)
+            child_dst = _join(dst, name)
+            if _is_dir(child_src): _copy_tree(child_src, child_dst)
+            else: _copy_file(child_src, child_dst)
+    except Exception:
+        _remove_tree(dst)
+        raise
+
+
 class Browser:
     def __init__(self, folder="/", theme="GitHub Dark"):
         import pyeditor
@@ -96,6 +145,8 @@ class Browser:
         self.marked = set()
         self.sort_mode = "Name A-Z"
         self.last_search = ""
+        self.clipboard = []
+        self.clipboard_mode = None
         self.refresh()
 
     def refresh(self):
@@ -127,6 +178,18 @@ class Browser:
         entry = self.selected_entry()
         return _join(self.folder, entry[0]) if entry else None
 
+    def selection_targets(self):
+        targets = []
+        if self.marked:
+            for name, is_dir in self.entries:
+                if name in self.marked:
+                    targets.append((_join(self.folder, name), is_dir))
+        else:
+            entry = self.selected_entry()
+            if entry:
+                targets.append((_join(self.folder, entry[0]), entry[1]))
+        return targets
+
     def draw_softkeys(self, labels):
         g, p = self.g, self.palette
         y = SCREEN_H - NAV_H
@@ -150,7 +213,10 @@ class Browser:
         selected = self.selected_entry()
         hint = "EXE:INFO"
         if selected and selected[1]: hint = "EXE:OPEN"
-        if self.marked: hint = str(len(self.marked)) + " SELECT"
+        if self.marked:
+            hint = str(len(self.marked)) + " SELECT"
+        elif self.clipboard_mode:
+            hint = self.clipboard_mode.upper() + " " + str(len(self.clipboard))
         g.dtext(4, 3, p[3], title[:35])
         g.dtext(314, 3, p[3], hint[:10])
         if self.selected < self.scroll: self.scroll = self.selected
@@ -473,6 +539,73 @@ class Browser:
         if failed: self.msg += ", fail " + str(failed)
         self.refresh()
 
+    def set_clipboard(self, mode):
+        targets = self.selection_targets()
+        if not targets:
+            self.msg = "Select item"; return
+        self.clipboard = targets
+        self.clipboard_mode = mode
+        self.marked.clear()
+        self.msg = mode.capitalize() + " " + str(len(targets))
+
+    def paste_clipboard(self):
+        if not self.clipboard or not self.clipboard_mode:
+            self.msg = "Clipboard empty"; return
+        pasted = 0
+        failed = 0
+        remaining = []
+        mode = self.clipboard_mode
+        for src, is_dir in self.clipboard:
+            if not _exists(src):
+                failed += 1
+                if mode == "cut": remaining.append((src, is_dir))
+                continue
+            dest = _join(self.folder, _basename(src))
+            src_root = src.rstrip("/")
+            if dest == src or _exists(dest):
+                failed += 1
+                if mode == "cut": remaining.append((src, is_dir))
+                continue
+            if is_dir and (self.folder == src_root or self.folder.startswith(src_root + "/")):
+                failed += 1
+                if mode == "cut": remaining.append((src, is_dir))
+                continue
+            try:
+                if mode == "cut":
+                    pyperm.require_write(src)
+                    os.rename(src, dest)
+                    try: pyperm.move(src, dest)
+                    except Exception as exc: print("Permission move error:", repr(exc))
+                elif is_dir:
+                    _copy_tree(src, dest)
+                else:
+                    _copy_file(src, dest)
+                pasted += 1
+            except Exception as exc:
+                print("Paste error:", _basename(src), repr(exc))
+                failed += 1
+                if mode == "cut": remaining.append((src, is_dir))
+        if mode == "cut":
+            self.clipboard = remaining
+            if not remaining: self.clipboard_mode = None
+        self.msg = "Pasted " + str(pasted)
+        if failed: self.msg += ", fail " + str(failed)
+        self.refresh()
+        gc.collect()
+
+    def clipboard_menu(self):
+        mode = self.clipboard_mode.upper() if self.clipboard_mode else "EMPTY"
+        title = "Clipboard " + mode
+        choice = self.popup(title, (
+            "Copy selected", "Cut selected", "Paste here", "Clear clipboard", "Cancel"))
+        if choice == "Copy selected": self.set_clipboard("copy")
+        elif choice == "Cut selected": self.set_clipboard("cut")
+        elif choice == "Paste here": self.paste_clipboard()
+        elif choice == "Clear clipboard":
+            self.clipboard = []
+            self.clipboard_mode = None
+            self.msg = "Clipboard clear"
+
     def permission_menu(self, path=None):
         path = path or self.selected_path()
         if not path:
@@ -521,7 +654,7 @@ class Browser:
 
     def more_menu(self):
         choice = self.popup("More", (
-            "File information", "Run file", "Edit file", "Delete selected", "New editor",
+            "File information", "Run file", "Edit file", "Delete selected", "Clipboard", "New editor",
             "Up one folder", "Permissions", "Compress to ZIP", "Extract ZIP", "Theme",
             "PythonUltra Info", "Refresh", "Exit Files"))
         if choice == "File information":
@@ -531,6 +664,7 @@ class Browser:
         elif choice == "Run file": self.run_file()
         elif choice == "Edit file": self.edit_file()
         elif choice == "Delete selected": self.delete_selected()
+        elif choice == "Clipboard": self.clipboard_menu()
         elif choice == "New editor": self.open_editor()
         elif choice == "Up one folder":
             self.folder = _parent(self.folder); self.selected = self.scroll = 0; self.marked.clear(); self.refresh()
