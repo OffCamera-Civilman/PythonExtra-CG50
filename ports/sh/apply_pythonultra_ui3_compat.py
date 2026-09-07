@@ -17,6 +17,14 @@ loop. This preserves terminal initialization while making Files the first user-
 visible workspace. The compatibility stage also avoids frozen-QSTR punctuation
 names and defaults the editor to the known-good system font until JetBrains Mono
 raster generation is fixed on hardware.
+
+Editor hardware follow-up: the original PyEditorRC prototype reads physical key
+events with pollevent()/keydown(), but the frozen editor refactor switched to a
+blocking getkey_opt() call that temporarily rewrites the shared keydev_std()
+transform. F5 launches the editor synchronously from inside JustUI's key-event
+handler, so that transform handoff is unsafe on calculator hardware. Restore a
+polling input path and discard the launcher's stale event tail before the editor
+takes ownership of keyboard input.
 '''
 
 from pathlib import Path
@@ -93,6 +101,67 @@ def _safe_editor_default_font():
     path.write_text(text.replace(old, new, 1), encoding="utf-8")
 
 
+def _safe_editor_input():
+    path = Path(__file__).with_name("modules") / "pyeditor" / "__init__.py"
+    text = path.read_text(encoding="utf-8")
+
+    old_imports = '''import gc
+import sys
+'''
+    new_imports = '''import gc
+import sys
+import time
+'''
+    if new_imports not in text:
+        if old_imports not in text:
+            raise SystemExit("Unable to locate PythonUltra editor import block")
+        text = text.replace(old_imports, new_imports, 1)
+
+    old_reader = '''def _raw_key(g):
+    """Read a key without gint consuming SHIFT/ALPHA as modifiers."""
+    try:
+        opts = g.GETKEY_DEFAULT & ~(g.GETKEY_MOD_SHIFT | g.GETKEY_MOD_ALPHA)
+        return g.getkey_opt(opts, None).key
+    except Exception:
+        # Older compatible builds can still fall back to getkey().
+        return g.getkey().key
+'''
+    new_reader = '''def _raw_key(g):
+    """Read physical key events without rewriting the shared key transform."""
+    while True:
+        ev = g.pollevent()
+        if ev.type == g.KEYEV_DOWN:
+            return ev.key
+        if ev.type == g.KEYEV_HOLD and ev.key in (
+            g.KEY_UP, g.KEY_DOWN, g.KEY_LEFT, g.KEY_RIGHT, g.KEY_DEL
+        ):
+            return ev.key
+        time.sleep(0.01)
+'''
+    if new_reader not in text:
+        if old_reader not in text:
+            raise SystemExit("Unable to locate PythonUltra editor raw-key block")
+        text = text.replace(old_reader, new_reader, 1)
+
+    old_run = '''    def run(self):
+        g = self.g
+        while True:
+'''
+    new_run = '''    def run(self):
+        g = self.g
+        # F5/EXE comes from JustUI. Drain its release/modifier tail before the
+        # editor starts reading the same global keyboard event queue directly.
+        g.clearevents()
+        while True:
+'''
+    if new_run not in text:
+        if old_run not in text:
+            raise SystemExit("Unable to locate PythonUltra editor run loop")
+        text = text.replace(old_run, new_run, 1)
+
+    path.write_text(text, encoding="utf-8")
+
+
 ui3.replace_once = _compatible_replace_once
 
 if __name__ == "__main__":
@@ -101,3 +170,4 @@ if __name__ == "__main__":
     _prefer_files_startup()
     _runtime_help_separator()
     _safe_editor_default_font()
+    _safe_editor_input()
