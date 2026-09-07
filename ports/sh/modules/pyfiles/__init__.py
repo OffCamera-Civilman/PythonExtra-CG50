@@ -5,7 +5,7 @@ import os
 import sys
 import pyperm
 
-__version__ = "0.6.0-cg50"
+__version__ = "0.7.0-cg50"
 
 SCREEN_W = 396
 SCREEN_H = 224
@@ -75,6 +75,11 @@ def _file_type(path):
     if lower.endswith((".html", ".css", ".js")): return "Web source"
     if _looks_text(path): return "Text file"
     return "File"
+
+
+def _file_size(path):
+    try: return os.stat(path)[6]
+    except OSError: return 0
 
 
 def _mode_string(path):
@@ -156,8 +161,18 @@ class Browser:
         dirs, files = [], []
         for name in names:
             (dirs if _is_dir(_join(self.folder, name)) else files).append(name)
-        reverse = self.sort_mode == "Name Z-A"
-        dirs.sort(reverse=reverse); files.sort(reverse=reverse)
+        if self.sort_mode == "Type":
+            dirs.sort()
+            files.sort(key=lambda name: (_file_type(_join(self.folder, name)).lower(), name.lower()))
+        elif self.sort_mode == "Size small-large":
+            dirs.sort()
+            files.sort(key=lambda name: (_file_size(_join(self.folder, name)), name.lower()))
+        elif self.sort_mode == "Size large-small":
+            dirs.sort()
+            files.sort(key=lambda name: (_file_size(_join(self.folder, name)), name.lower()), reverse=True)
+        else:
+            reverse = self.sort_mode == "Name Z-A"
+            dirs.sort(reverse=reverse); files.sort(reverse=reverse)
         if self.sort_mode == "Files first":
             self.entries = [(name, False) for name in files] + [(name, True) for name in dirs]
         else:
@@ -285,7 +300,9 @@ class Browser:
         self.msg = str(len(self.marked)) + " selected" if self.marked else "Selection clear"
 
     def sequence_menu(self):
-        choice = self.popup("Sequence", ("Name A-Z", "Name Z-A", "Files first", "Cancel"))
+        choice = self.popup("Sequence", (
+            "Name A-Z", "Name Z-A", "Type", "Size small-large", "Size large-small",
+            "Files first", "Cancel"))
         if not choice or choice == "Cancel": return
         self.sort_mode = choice
         self.selected = self.scroll = 0
