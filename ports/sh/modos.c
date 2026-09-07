@@ -11,7 +11,6 @@
 #include <gint/gint.h>
 #include <dirent.h>
 #include <errno.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -24,13 +23,14 @@
  * opendir() needs the switch: DIR contains a cached directory snapshot and
  * readdir()/closedir() then operate normally on that object.
  *
- * GINT_CALL only accepts register-sized primitive/pointer arguments, so
- * structure pointers are passed as void * through small int-returning ABI
- * adapters. Pointer-returning libc calls are converted through uintptr_t.
+ * Keep pointer-returning opendir() as the direct GINT_CALL target. This is the
+ * documented gint pattern and avoids routing the DIR pointer through an
+ * int-returning adapter before it reaches the application context.
+ * GINT_CALL adapters below are only used for integer-returning operations.
  */
-static int pe_ws_opendir(void *path_in)
+static DIR *pe_os_opendir(char const *path)
 {
-    return (int)(uintptr_t)opendir((char const *)path_in);
+    return (DIR *)gint_world_switch(GINT_CALL(opendir, path));
 }
 
 static int pe_ws_mkdir(void *path_in, int mode)
@@ -98,8 +98,7 @@ static mp_obj_t pe_os_listdir(size_t n_args, const mp_obj_t *args)
     if(pe_path_resolve(input, resolved, sizeof resolved) < 0)
         mp_raise_OSError(errno);
 
-    DIR *dir = (DIR *)(uintptr_t)pe_os_world_int(
-        GINT_CALL(pe_ws_opendir, (void *)resolved));
+    DIR *dir = pe_os_opendir(resolved);
     if(!dir)
         mp_raise_OSError(errno);
 
