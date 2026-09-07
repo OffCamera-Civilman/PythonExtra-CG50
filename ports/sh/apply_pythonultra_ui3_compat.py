@@ -1,20 +1,16 @@
 '''Compatibility launcher for the PythonUltra UI3 patch stage.
 
-The editor has evolved independently of UI3. Restoring the global gint font on
-editor exit is a cosmetic cleanup only; when that exact one-line source shape
-is absent, keep the stronger UI3 checks for every other integration block and
-continue the build.
+The canonical editor owns its font restoration and physical-event input path;
+the legacy editor substitutions must not overwrite its tested implementation.
 
 UI3 also adds string-based font selectors to modgint.c. Ensure the generated C
 source declares strcmp() explicitly so the SH cross-compiler can build it with
 implicit-function declarations treated as errors.
 
 Hardware follow-up: UI2/UI3 initialize the native Terminal first so RC settings,
-font, theme and persistent history can be restored. PythonUltra should still
-*present* enhanced Files first. Rather than replacing UI3's startup block, run
-pyfiles immediately after native startup is complete and just before the event
-loop. This preserves terminal initialization while making Files the first user-
-visible workspace. The compatibility stage also avoids frozen-QSTR punctuation
+font, theme and persistent history can be restored. After initialization, honor
+the RC startup preference: Files by default or Terminal when explicitly set.
+The compatibility stage also avoids frozen-QSTR punctuation
 names and defaults the editor to the known-good system font until JetBrains Mono
 raster generation is fixed on hardware.
 
@@ -60,12 +56,14 @@ def _prefer_files_startup():
     text = path.read_text(encoding="utf-8")
     marker = '''    //=== Event handling ===//
 '''
-    injected = '''    /* PythonUltra hardware default: present enhanced Files first. Native
-       Terminal startup has already restored RC/theme/font/history above. */
-    if(pe_dark_mode)
-        pe_run_python_action("import pyfiles as _pf; _pf.browse('/', 'GitHub Dark')");
-    else
-        pe_run_python_action("import pyfiles as _pf; _pf.browse('/', 'GitHub Light')");
+    injected = '''    /* The RC can select Terminal explicitly. Missing/invalid startup
+       settings retain the PythonUltra hardware default of enhanced Files. */
+    if(pe_pyterm_call_int0(MP_QSTR_startup_view)) {
+        if(pe_dark_mode)
+            pe_run_python_action("import pyfiles as _pf; _pf.browse('/', 'GitHub Dark')");
+        else
+            pe_run_python_action("import pyfiles as _pf; _pf.browse('/', 'GitHub Light')");
+    }
     pe_show_shell();
 
     //=== Event handling ===//
@@ -89,9 +87,26 @@ def _runtime_help_separator():
     path.write_text(text.replace(old, new, 1), encoding="utf-8")
 
 
+def _catalog_command():
+    path = Path(__file__).with_name("main.c")
+    text = path.read_text(encoding="utf-8")
+    old = '''                else if(action == 40) pe_terminal_apply_config();
+                pe_print_terminal_prompt();
+'''
+    new = old + '''                if(action == 41) pe_insert_catalog_selection();
+'''
+    if new in text:
+        return
+    if old not in text:
+        raise SystemExit("Unable to locate native Catalog command insertion")
+    path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+
 def _safe_editor_default_font():
     path = Path(__file__).with_name("modules") / "pyeditor" / "__init__.py"
     text = path.read_text(encoding="utf-8")
+    if "EDITOR_FIXES_VERSION = 1" in text:
+        return
     old = 'DEFAULT_FONT = "JetBrains Small"\n'
     new = 'DEFAULT_FONT = "System Small"\n'
     if new in text:
@@ -104,6 +119,8 @@ def _safe_editor_default_font():
 def _safe_editor_input():
     path = Path(__file__).with_name("modules") / "pyeditor" / "__init__.py"
     text = path.read_text(encoding="utf-8")
+    if "EDITOR_FIXES_VERSION = 1" in text:
+        return
 
     old_imports = '''import gc
 import sys
@@ -169,5 +186,6 @@ if __name__ == "__main__":
     _ensure_string_header()
     _prefer_files_startup()
     _runtime_help_separator()
+    _catalog_command()
     _safe_editor_default_font()
     _safe_editor_input()

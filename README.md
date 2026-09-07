@@ -63,13 +63,18 @@ The first milestone intentionally skips triangles that cross the near plane inst
 
 ## Development plan
 
+The [PythonUltra master list](PYTHONULTRA_ROADMAP.md) is the canonical running
+roadmap, cross-referenced against code, tests, commits and hardware reports.
+It separates implemented features from active defects and genuinely unbuilt work.
+
 - `main` — imported upstream baseline and project infrastructure.
 - `cg50-new-display` — active PythonUltra integration branch, confirmed on older and newer fx-CG50 revisions.
 - **Completed milestone 1:** compact Pygame compatibility layer and PythonUltra rename.
 - **Completed milestone 2:** compact NumPy matrix/vector expansion, including transpose and inverse.
 - **Completed milestone 3:** first frozen `py3d` software-rendering engine and rotating-cube demo.
 - **Next 3D work:** near-plane triangle clipping, camera/view transforms, mesh loading, frustum culling and performance profiling on physical hardware.
-- **Later milestones:** standard-library expansion, uploaded turtle/matplotlib modules, shell improvements, debugger and text editor.
+- **Active corrections:** editor layout/input/file safety, ZIP seek/extraction, RC-controlled startup and truthful file metadata.
+- **Remaining capabilities:** adjustable date/time with real modification timestamps, standard-library gaps, built-in turtle/matplotl, debugger, PicoC and remaining UI/Files features. The editor, shell and core Files features already exist.
 
 ## Collaboration
 

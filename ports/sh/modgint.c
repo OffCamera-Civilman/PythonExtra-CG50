@@ -506,6 +506,20 @@ static mp_obj_t modgint_dtext(size_t n, mp_obj_t const *args)
     return mp_const_none;
 }
 
+static mp_obj_t modgint_dsize(mp_obj_t text_in)
+{
+    char const *text = mp_obj_str_get_str(text_in);
+    int width = 0, height = 0;
+    /* NULL selects gint's currently configured font. This is required by the
+       editor because the built-in system fonts are proportional. */
+    dsize(text, NULL, &width, &height);
+    mp_obj_t items[2] = {
+        MP_OBJ_NEW_SMALL_INT(width), MP_OBJ_NEW_SMALL_INT(height)
+    };
+    return mp_obj_new_tuple(2, items);
+}
+FUN_1(dsize);
+
 static mp_obj_t modgint_dfont(mp_obj_t new_font)
 {
     /* This object must survive beyond the call because of course it will keep
@@ -849,6 +863,7 @@ static const mp_rom_map_elem_t modgint_module_globals_table[] = {
 
     { MP_ROM_QSTR(MP_QSTR_font), MP_ROM_PTR(&mp_type_gintfont) },   
     OBJ(dfont),
+    OBJ(dsize),
     OBJ(dtext_opt),
     OBJ(dtext),
 

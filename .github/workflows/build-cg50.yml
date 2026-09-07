@@ -239,7 +239,9 @@ jobs:
         run: |
           set -euo pipefail
           export PATH="$HOME/.local/bin:$PATH"
-          make -C ports/fxcg50 -j2
+          # Finish source-generation patches before parallel QSTR/compile work.
+          make -C ports/fxcg50 pythonultra-runtime-fixes
+          make -C ports/fxcg50 -j2 PYTHONULTRA_RUNTIME_PREPARED=1
 
       - name: Smoke-check G3A and REPL surface
         shell: bash
@@ -279,12 +281,22 @@ jobs:
               print(f"  present: {label}")
           PY
 
+      - name: Prepare numbered download
+        shell: bash
+        run: |
+          set -euo pipefail
+          candidate="ports/fxcg50/PythonUltra-CG50-run${GITHUB_RUN_NUMBER}.g3a"
+          cp ports/fxcg50/PythonUltra.g3a "$candidate"
+          mkdir -p build-info
+          sha256sum "$candidate" > build-info/SHA256SUMS.txt
+          printf 'Run: %s\nCommit: %s\n' "$GITHUB_RUN_NUMBER" "$GITHUB_SHA" > build-info/candidate.txt
+
       - name: Upload G3A and guide
         uses: actions/upload-artifact@v4
         with:
-          name: PythonUltra-CG50
+          name: PythonUltra-CG50-run${{ github.run_number }}
           path: |
-            ports/fxcg50/PythonUltra.g3a
+            ports/fxcg50/PythonUltra-CG50-run*.g3a
             ports/sh/PythonUltra_User_Guide.txt
             build-info/
           if-no-files-found: error

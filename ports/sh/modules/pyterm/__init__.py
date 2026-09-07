@@ -187,11 +187,16 @@ _MAN = {
 }
 
 _ALIASES = {}
-_SETTINGS = {"font": "normal", "theme": "dark"}
+DEFAULT_MENU_BORDER = 0x07FF  # Cyan, matching the existing Catalog frame.
+_SETTINGS = {"font": "normal", "theme": "dark", "startup": "files",
+             "menu_border": DEFAULT_MENU_BORDER}
 _STARTED = False
 _RC_TEMPLATE = """# PythonUltra terminal configuration
 # Read at startup. Lines beginning with # are comments.
 set theme=dark
+set startup=files
+# Optional: color name, #RRGGBB, or 0xRGB565. Omitted -> cyan.
+# set menu_border=cyan
 set font=normal
 # cd /games
 # alias ll='ls -l'
@@ -298,6 +303,12 @@ def _apply_rc_line(raw):
             _SETTINGS["font"] = value
         elif key == "theme" and value in ("dark", "light"):
             _SETTINGS["theme"] = value
+        elif key == "startup" and value in ("files", "terminal"):
+            _SETTINGS["startup"] = value
+        elif key == "menu_border":
+            color = _parse_color(value)
+            if color is not None:
+                _SETTINGS["menu_border"] = color
         return
     if line == "cd" or line.startswith("cd "):
         try:
@@ -312,6 +323,8 @@ def source(path=RC_PATH, reset=False):
         _ALIASES.clear()
         _SETTINGS["font"] = "normal"
         _SETTINGS["theme"] = "dark"
+        _SETTINGS["startup"] = "files"
+        _SETTINGS["menu_border"] = DEFAULT_MENU_BORDER
     try:
         with open(path, "r") as source_file:
             for line in source_file:
@@ -331,6 +344,38 @@ def startup():
         _STARTED = True
     font_index = {"small": 0, "normal": 1, "large": 2}.get(_SETTINGS["font"], 1)
     return font_index | (4 if _SETTINGS.get("theme") == "dark" else 0)
+
+
+def startup_view():
+    """Return 1 for Files and 0 for Terminal after startup RC is loaded."""
+    if not _STARTED:
+        startup()
+    return 0 if _SETTINGS.get("startup") == "terminal" else 1
+
+
+def _parse_color(value):
+    names = {"cyan": 0x07FF, "red": 0xF800, "green": 0x07E0,
+             "blue": 0x001F, "yellow": 0xFFE0, "magenta": 0xF81F,
+             "white": 0xFFFF, "black": 0x0000, "orange": 0xFD20}
+    if value in names:
+        return names[value]
+    try:
+        if len(value) == 7 and value.startswith("#"):
+            rgb = int(value[1:], 16)
+            if 0 <= rgb <= 0xFFFFFF:
+                return ((rgb >> 8) & 0xF800) | ((rgb >> 5) & 0x07E0) | ((rgb >> 3) & 0x001F)
+        if value.startswith("0x"):
+            rgb565 = int(value[2:], 16)
+            if 0 <= rgb565 <= 0xFFFF:
+                return rgb565
+    except ValueError:
+        pass
+    return None
+
+
+def menu_border():
+    _ensure_started()
+    return _SETTINGS.get("menu_border", DEFAULT_MENU_BORDER)
 
 
 def _ensure_started():
@@ -614,8 +659,8 @@ def dispatch(line):
         pyfiles.browse(args[0] if args else os.getcwd(), "GitHub Dark" if _SETTINGS["theme"] == "dark" else "GitHub Light")
         return 0
     if lower == "modules":
-        import pythonultra
-        pythonultra.catalog_ui(_SETTINGS["theme"] == "dark"); return 0
+        # The native shell inserts the selection after drawing the new prompt.
+        return 41
     if lower == "info":
         import pythonultra
         pythonultra.info_ui(_SETTINGS["theme"] == "dark"); return 0

@@ -16,12 +16,14 @@ $(JETBRAINS_FONTS) &: prepare_jetbrains_mono.py JetBrainsMono-OFL.txt
 
 .PHONY: pythonultra-runtime-fixes
 pythonultra-runtime-fixes:
+ifneq ($(PYTHONULTRA_RUNTIME_PREPARED),1)
 	python3 ../sh/apply_runtime_fixes.py
 	python3 ../sh/apply_pythonultra_features.py
 	python3 ../sh/apply_pythonultra_ui2.py
 	python3 ../sh/apply_pythonultra_permissions.py
 	python3 ../sh/apply_pythonultra_ui3_compat.py
 	python3 ../sh/apply_pythonultra_symbols.py
+endif
 	python3 -m py_compile \
 		../sh/modules/pythonultra/__init__.py \
 		../sh/modules/pyeditor/__init__.py \
@@ -32,6 +34,13 @@ pythonultra-runtime-fixes:
 	python3 ../../tests/ports/sh/pygame_compat.py
 	python3 ../../tests/ports/sh/pygame_cg50_regression.py
 	python3 ../../tests/ports/sh/numpy_compat.py
+	python3 ../../tests/ports/sh/py3d_compat.py
+	python3 ../../tests/ports/sh/pyeditor_regression.py
+	python3 ../../tests/ports/sh/zipfile_roundtrip.py
+	python3 ../../tests/ports/sh/pyterm_startup.py
+	python3 ../../tests/ports/sh/fdfile_seek.py
+	python3 ../../tests/ports/sh/catalog_ui.py
+	python3 ../../tests/ports/sh/file_info_timestamp.py
 	python3 ../../tests/ports/sh/pythonultra_features.py
 
 # The frozen Python modules must be patched and tested before firmware.bin is generated.

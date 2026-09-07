@@ -65,11 +65,57 @@ def catalog(name=None):
 
 
 def popup(title, items, dark=False):
+    """Use a bounded menu font, independent of the terminal/editor size."""
+    import gint
+    try:
+        gint.dfont_builtin("small")
+        return _popup(title, items, dark)
+    finally:
+        gint.dfont(None)
+
+
+def menu_border():
+    import pyterm
+    return pyterm.menu_border()
+
+
+def _popup_text(gint, text, width):
+    text = str(text)
+    low, high = 0, len(text)
+    while low < high:
+        middle = (low + high + 1) // 2
+        if gint.dsize(text[:middle])[0] <= width:
+            low = middle
+        else:
+            high = middle - 1
+    return text[:low]
+
+
+def _popup_key(gint):
+    # The native UI invokes these menus inside its key-event callback. Keep
+    # the physical event transform unchanged, as in the editor's safe path.
+    import time
+    while True:
+        event = gint.pollevent()
+        if event.type == gint.KEYEV_DOWN:
+            return event.key
+        if event.type == gint.KEYEV_HOLD and event.key in (
+                gint.KEY_UP, gint.KEY_DOWN, gint.KEY_ADD, gint.KEY_SUB):
+            return event.key
+        time.sleep_ms(5)
+
+
+def _popup(title, items, dark=False):
     """Display a Geometry-style modal list and return the chosen item."""
     import gint
     if not items:
         return None
-    colors = UI_DARK if dark else UI_LIGHT
+    colors = dict(UI_DARK if dark else UI_LIGHT)
+    colors["accent"] = menu_border()
+    color = colors["accent"]
+    brightness = ((color >> 11) & 31) * 2 + ((color >> 5) & 63) * 3 + (color & 31)
+    colors["title"] = 0x0000 if brightness >= 140 else 0xFFFF
+    gint.clearevents()
     selected = 0
     scroll = 0
     max_visible = 10
@@ -95,7 +141,8 @@ def popup(title, items, dark=False):
                         tab_x + max(94, min(214, 26 + len(title_text) * 8)))
         gint.drect_border(tab_x, panel_top - 16, tab_right, panel_top + 1,
                           colors["accent"], 2, colors["bg"])
-        gint.dtext(tab_x + 8, panel_top - 13, colors["title"], title_text[:23])
+        gint.dtext(tab_x + 8, panel_top - 13, colors["title"],
+                   _popup_text(gint, title_text, tab_right - tab_x - 16))
 
         if selected < scroll:
             scroll = selected
@@ -112,7 +159,8 @@ def popup(title, items, dark=False):
             gint.drect(panel_x + 8, y, panel_right - 8, y + row_h - 1, bg)
             prefix = str(row + 1) if row < 9 else "0"
             gint.dtext(panel_x + 14, y + 1, fg,
-                       prefix + ":" + str(items[idx])[:34])
+                       _popup_text(gint, prefix + ":" + str(items[idx]),
+                                   panel_right - panel_x - 30))
 
         if scroll > 0:
             gint.dtext(panel_right - 19, panel_top + 4, colors["accent"], "^")
@@ -120,7 +168,7 @@ def popup(title, items, dark=False):
             gint.dtext(panel_right - 19, bottom - 12, colors["accent"], "v")
 
         gint.dupdate()
-        key = gint.getkey().key
+        key = _popup_key(gint)
         if key in (gint.KEY_EXIT, gint.KEY_LEFT):
             return None
         if key in (gint.KEY_EXE, gint.KEY_RIGHT):
@@ -155,6 +203,16 @@ def catalog_ui(dark=False):
         member = popup(module, catalog_data(module), dark)
         if member is not None:
             return module, member
+
+
+def catalog_text(module, member):
+    """Insert names, not executable examples; builtins need no module prefix."""
+    return member if module == "builtins" else module + "." + member
+
+
+def catalog_insert_ui(dark=False):
+    selection = catalog_ui(dark)
+    return catalog_text(*selection) if selection is not None else None
 
 
 def info_lines():

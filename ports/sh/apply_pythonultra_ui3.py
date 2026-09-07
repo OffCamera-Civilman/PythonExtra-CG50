@@ -62,8 +62,8 @@ def patch_builtin_fonts():
             "built-in font selector",
         ),
         (
-            '''    OBJ(dfont),\n    OBJ(dtext_opt),\n''',
-            '''    OBJ(dfont),\n#if defined(FXCG50)\n    OBJ(dfont_builtin),\n#endif\n    OBJ(dtext_opt),\n''',
+            '''    OBJ(dfont),\n    OBJ(dsize),\n    OBJ(dtext_opt),\n''',
+            '''    OBJ(dfont),\n#if defined(FXCG50)\n    OBJ(dfont_builtin),\n#endif\n    OBJ(dsize),\n    OBJ(dtext_opt),\n''',
             "font selector export",
         ),
     ])
@@ -122,6 +122,8 @@ def patch_terminal_python():
 
 
 def patch_editor():
+    if "EDITOR_FIXES_VERSION = 1" in EDITOR.read_text(encoding="utf-8"):
+        return False
     changed = patch(EDITOR, [
         (
             '''FONT_W = 8\nFONT_H = 11\nTEXT_X = 2\nMAX_ROWS = (SCREEN_H - NAV_H - INFO_H) // FONT_H\nMAX_COLS = (SCREEN_W - TEXT_X) // FONT_W\n''',

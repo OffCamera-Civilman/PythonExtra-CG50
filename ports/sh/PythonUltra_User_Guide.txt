@@ -96,8 +96,22 @@ Persistent command history is stored in:
 Example RC entries:
   set theme=dark
   set font=normal
+  set startup=files
   cd /games
   alias ll='ls -l'
+
+Use set startup=terminal to start at the terminal instead of Files.
+Files is the default if the startup setting is missing. Save the RC and restart
+PythonUltra to check the startup view; rc reload applies theme/font in-session.
+
+Menu frame color is also configurable in /.pythonultrarc:
+  set menu_border=cyan
+  set menu_border=#ff8800
+  set menu_border=0x07ff
+Choose one line. Names: cyan, red, green, blue, yellow, magenta, white,
+black, orange. #RRGGBB is converted to the calculator's RGB565 format.
+Missing/invalid settings use cyan. Run "rc reload" after editing the RC.
+This controls Catalog/Files modal frames and editor popup borders.
 
 ============================================================
 4. PYTHON FROM THE TERMINAL
@@ -200,6 +214,14 @@ built-ins, numbers, strings, comments, decorators, operators and module names.
 The current development build also generates calculator raster-font assets
 from a pinned JetBrains Mono source during the build. The source font itself is
 not bundled as a downloadable project artifact.
+
+The editor offers the known-good System Small/Normal/Large fonts. JetBrains
+editor options are hidden pending hardware verification. Status and F-key bars
+stay small regardless of the body font. New chooses an unused filename; Open
+keeps the existing buffer if loading fails. Limits: 64 KiB / 2048 lines.
+Save stages a temporary sibling and keeps the original until replacement can
+succeed. If storage interrupts recovery, a .pu-backup sibling may remain.
+F1 Run saves when needed and executes a Python file once.
 
 ============================================================
 7. ZIP / UNZIP
@@ -340,6 +362,12 @@ Terminal manual:
   COMMAND --help
 
 F3 opens the graphical module/method catalog.
+
+EXE or a numbered shortcut selects a member and inserts its qualified name
+at the current cursor (for example numpy.array; builtins insert as print).
+It does not execute code, erase the input line, add arguments or add imports.
+Import the module in your Python program/REPL as needed. EXIT cancels.
+The terminal "modules" command also returns the selection to the input line.
 F6 opens build and collaboration information.
 
 ============================================================

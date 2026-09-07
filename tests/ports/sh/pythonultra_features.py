@@ -42,19 +42,21 @@ pyfiles = (MODULES / "pyfiles" / "__init__.py").read_text(encoding="utf-8")
 pyeditor = (MODULES / "pyeditor" / "__init__.py").read_text(encoding="utf-8")
 pyperm = (MODULES / "pyperm" / "__init__.py").read_text(encoding="utf-8")
 pyultra = (MODULES / "pythonultra" / "__init__.py").read_text(encoding="utf-8")
+pyzip = (MODULES / "zipfile" / "__init__.py").read_text(encoding="utf-8")
 metadata = (FXCG / "fxconv-metadata.txt").read_text(encoding="utf-8")
 makefile = (FXCG / "Makefile").read_text(encoding="utf-8")
 
 # Native shell UI and PythonUltra help/catalog/info integration.
 assert "pythonultra_help_text" in main
 assert "MICROPY_PY_BUILTINS_HELP_TEXT     pythonultra_help_text" in config
-assert "key == KEY_F3" in main and "_pu.catalog_ui(" in main
+assert "key == KEY_F3" in main and "MP_QSTR_catalog_insert_ui" in main
 assert "key == KEY_F4" in main and "pe_apply_theme()" in main
 assert "key == KEY_F5" in main and "pyeditor" in main
 assert "key == KEY_F6" in main and "_pu.info_ui(" in main
 assert "pe_terminal_dispatch" in main and "MP_QSTR_pyterm" in main
 assert "pe_terminal_load_startup" in main and "pe_terminal_apply_config" in main
 assert "pe_apply_terminal_font" in main
+assert "if(pe_pyterm_call_int0(MP_QSTR_startup_view))" in main
 
 # Persistent history and SHIFT+DEL programming-symbol insertion.
 assert "widget_shell_history_recall" in widget
@@ -73,17 +75,25 @@ for code in (64, 35, 36, 37, 94, 38, 42, 33, 60, 62, 61, 43, 45,
              59, 44, 46):
     assert str(code) in pyultra
 
-# Embedded system + JetBrains Mono font families and editor font control.
+# Embedded system + JetBrains terminal fonts and measured editor font control.
 assert "modgint_dfont_builtin" in modgint and "OBJ(dfont_builtin)" in modgint
+assert "modgint_dsize" in modgint and "OBJ(dsize)" in modgint
 assert "font_jb_9" in modgint and "font_jb_13" in modgint and "font_jb_19" in modgint
 assert "font_jb_9.png" in metadata and "font_jb_13.png" in metadata and "font_jb_19.png" in metadata
 assert "prepare_jetbrains_mono.py" in makefile and "apply_pythonultra_ui3_compat.py" in makefile
-assert "apply_font" in pyeditor and "JetBrains Small" in pyeditor and "JetBrains Normal" in pyeditor
+assert "EDITOR_FIXES_VERSION = 1" in pyeditor
+assert "apply_font" in pyeditor and '"System Small", "System Normal", "System Large"' in pyeditor
+assert "self.g.dsize(text)" in pyeditor
+assert '"JetBrains Small", "JetBrains Normal"' not in pyeditor
 
 # Virtual current working directory: terminal/os/open/imports share one path layer.
 assert "pe_path_getcwd" in pathutil and "pe_path_chdir" in pathutil and "pe_path_resolve" in pathutil
 assert "pe_path_getcwd" in modos and "pe_path_chdir" in modos and "pe_path_resolve" in modos
 assert "pe_path_resolve" in fdfile
+assert "request == MP_STREAM_SEEK" in fdfile and "GINT_CALL(fdfile_world_seek" in fdfile
+assert "seek->offset = call.result" in fdfile and "request == MP_STREAM_FLUSH" in fdfile
+assert "struct stat st = {0};" in modos
+assert "#define MICROPY_PY_ERRNO" in config
 assert "pe_path_getcwd" in main and "pe_path_resolve" in main
 # Reject actual bare libc cwd calls while allowing PythonUltra wrappers such as
 # pe_os_getcwd(), pe_os_chdir(), pe_path_getcwd() and pe_path_chdir().
@@ -110,12 +120,16 @@ assert '"alias"' in pyterm and '"history"' in pyterm and '"font"' in pyterm
 assert 'cmd.startswith("./")' in pyterm and "require_execute" in pyterm
 assert "FONT_JB_SMALL" in pyterm and "FONT_JB_NORMAL" in pyterm and "FONT_JB_LARGE" in pyterm
 assert "def history_tail(" in pyterm and "def config(" in pyterm
+assert '"startup": "files"' in pyterm and "def startup_view(" in pyterm
+assert 'value in ("files", "terminal")' in pyterm
 
 assert "create_new" in pyfiles and "rename_selected" in pyfiles and "delete_selected" in pyfiles
 assert "permission_menu" in pyfiles and "pyperm.require_write" in pyfiles
 assert "compress_selected" in pyfiles and "extract_selected" in pyfiles
+assert 'result == "run"' not in pyfiles
 assert "GitHub Dark" in pyeditor and "GitHub Light" in pyeditor and "Linux" in pyeditor
 assert "pyperm.require_write" in pyeditor
+assert "_cleanup(created_files, created_folders)" in pyzip
 assert 'DB_PATH = "/.pythonultra_permissions"' in pyperm
 assert "def format_mode" in pyperm and "def executable" in pyperm
 

@@ -16,6 +16,9 @@ def replace_once(text, old, new, label):
 
 def main():
     text = EDITOR.read_text(encoding="utf-8")
+    if "EDITOR_FIXES_VERSION = 1" in text:
+        print("PythonUltra permissions: canonical editor already integrated")
+        return
     changed = False
 
     replacements = [

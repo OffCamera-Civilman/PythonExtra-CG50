@@ -8,6 +8,7 @@ import binascii
 import deflate
 import os
 import struct
+import errno
 
 __version__ = "0.1.0-cg50"
 
@@ -41,11 +42,33 @@ def _is_dir(path):
         return False
 
 
+def _exists(path):
+    try:
+        os.stat(path)
+        return True
+    except OSError as exc:
+        if exc.args and exc.args[0] == errno.ENOENT:
+            return False
+        raise
+
+
+def _absolute(path):
+    if not path.startswith("/"):
+        path = os.getcwd().rstrip("/") + "/" + path
+    parts = []
+    for part in path.split("/"):
+        if part == "..":
+            if parts: parts.pop()
+        elif part and part != ".":
+            parts.append(part)
+    return "/" + "/".join(parts)
+
+
 def _size(path):
     return os.stat(path)[6]
 
 
-def _mkdirs(path):
+def _mkdirs(path, created=None):
     if not path or path == "/":
         return
     current = "" if path.startswith("/") else None
@@ -60,6 +83,23 @@ def _mkdirs(path):
             current += "/" + part
         try:
             os.mkdir(current)
+            if created is not None:
+                created.append(current)
+        except OSError:
+            if not _is_dir(current):
+                raise
+
+
+def _cleanup(files, folders):
+    """Remove only output paths created by the failed operation."""
+    for path in reversed(files):
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+    for path in reversed(folders):
+        try:
+            os.rmdir(path)
         except OSError:
             pass
 
@@ -132,23 +172,39 @@ def compress(source, archive=None):
     """Compress one file or a whole folder to a standard .zip archive."""
     if archive is None:
         archive = source.rstrip("/") + ".zip"
+    source = _absolute(source)
+    archive = _absolute(archive)
+    if _exists(archive):
+        raise ValueError("ZIP target exists")
+    if _is_dir(source) and archive.startswith(source.rstrip("/") + "/"):
+        raise ValueError("ZIP must be outside source folder")
     records = []
-    with open(archive, "wb") as out:
-        for path, name, is_dir in _walk(source):
-            records.append(_write_entry(out, path, name, is_dir))
+    created = False
+    try:
+        with open(archive, "wb") as out:
+            created = True
+            for path, name, is_dir in _walk(source):
+                records.append(_write_entry(out, path, name, is_dir))
 
-        central_offset = out.tell()
-        for name, flags, method, crc, csize, usize, local_offset, is_dir in records:
-            external = 0x10 if is_dir else 0
-            out.write(struct.pack("<IHHHHHHIIIHHHHHII",
-                                  _CENTRAL, 20, 20, flags, method, 0, 0,
-                                  crc, csize, usize, len(name), 0, 0,
-                                  0, 0, external, local_offset))
-            out.write(name)
-        central_size = out.tell() - central_offset
-        count = len(records)
-        out.write(struct.pack("<IHHHHIIH", _EOCD, 0, 0, count, count,
-                              central_size, central_offset, 0))
+            central_offset = out.tell()
+            for name, flags, method, crc, csize, usize, local_offset, is_dir in records:
+                external = 0x10 if is_dir else 0
+                out.write(struct.pack("<IHHHHHHIIIHHHHHII",
+                                      _CENTRAL, 20, 20, flags, method, 0, 0,
+                                      crc, csize, usize, len(name), 0, 0,
+                                      0, 0, external, local_offset))
+                out.write(name)
+            central_size = out.tell() - central_offset
+            count = len(records)
+            out.write(struct.pack("<IHHHHIIH", _EOCD, 0, 0, count, count,
+                                  central_size, central_offset, 0))
+    except Exception:
+        if created:
+            try:
+                os.remove(archive)
+            except OSError:
+                pass
+        raise
     return archive
 
 
@@ -217,55 +273,64 @@ def extract(archive, destination=None):
     if destination is None:
         base = archive[:-4] if archive.lower().endswith(".zip") else archive + "_files"
         destination = base
-    _mkdirs(destination)
-    entries = _entries(archive)
-    with open(archive, "rb") as src:
-        for name, flags, method, crc_expected, csize, usize, local_offset in entries:
-            if flags & 1:
-                raise ValueError("encrypted ZIP entries unsupported")
-            clean = _safe_name(name)
-            if not clean:
-                continue
-            target = _join(destination, clean)
-            if name.endswith("/"):
-                _mkdirs(target)
-                continue
-            _mkdirs(_parent(target))
-            src.seek(local_offset)
-            header = src.read(30)
-            if len(header) != 30:
-                raise ValueError("truncated local header")
-            values = struct.unpack("<IHHHHHIIIHH", header)
-            if values[0] != _LOCAL:
-                raise ValueError("bad local header")
-            name_len = values[9]
-            extra_len = values[10]
-            src.seek(name_len + extra_len, 1)
-            crc = 0
-            written = 0
-            with open(target, "wb") as out:
-                if method == 0:
-                    remaining = csize
-                    while remaining:
-                        block = src.read(min(1024, remaining))
-                        if not block:
-                            raise ValueError("truncated stored entry")
-                        remaining -= len(block)
-                        written += len(block)
-                        crc = binascii.crc32(block, crc) & 0xffffffff
-                        out.write(block)
-                elif method == 8:
-                    stream = deflate.DeflateIO(src, deflate.RAW, 15, False)
-                    while True:
-                        block = stream.read(1024)
-                        if not block:
-                            break
-                        written += len(block)
-                        crc = binascii.crc32(block, crc) & 0xffffffff
-                        out.write(block)
-                    stream.close()
-                else:
-                    raise ValueError("unsupported ZIP method " + str(method))
-            if written != usize or crc != crc_expected:
-                raise ValueError("ZIP CRC/size mismatch: " + clean)
+    created_files = []
+    created_folders = []
+    try:
+        entries = _entries(archive)
+        _mkdirs(destination, created_folders)
+        with open(archive, "rb") as src:
+            for name, flags, method, crc_expected, csize, usize, local_offset in entries:
+                if flags & 1:
+                    raise ValueError("encrypted ZIP entries unsupported")
+                clean = _safe_name(name)
+                if not clean:
+                    continue
+                target = _join(destination, clean)
+                if name.endswith("/"):
+                    _mkdirs(target, created_folders)
+                    continue
+                _mkdirs(_parent(target), created_folders)
+                if _is_dir(target) or _exists(target):
+                    raise ValueError("ZIP target exists: " + clean)
+                src.seek(local_offset)
+                header = src.read(30)
+                if len(header) != 30:
+                    raise ValueError("truncated local header")
+                values = struct.unpack("<IHHHHHIIIHH", header)
+                if values[0] != _LOCAL:
+                    raise ValueError("bad local header")
+                name_len = values[9]
+                extra_len = values[10]
+                src.seek(name_len + extra_len, 1)
+                crc = 0
+                written = 0
+                with open(target, "wb") as out:
+                    created_files.append(target)
+                    if method == 0:
+                        remaining = csize
+                        while remaining:
+                            block = src.read(min(1024, remaining))
+                            if not block:
+                                raise ValueError("truncated stored entry")
+                            remaining -= len(block)
+                            written += len(block)
+                            crc = binascii.crc32(block, crc) & 0xffffffff
+                            out.write(block)
+                    elif method == 8:
+                        stream = deflate.DeflateIO(src, deflate.RAW, 15, False)
+                        while True:
+                            block = stream.read(1024)
+                            if not block:
+                                break
+                            written += len(block)
+                            crc = binascii.crc32(block, crc) & 0xffffffff
+                            out.write(block)
+                        stream.close()
+                    else:
+                        raise ValueError("unsupported ZIP method " + str(method))
+                if written != usize or crc != crc_expected:
+                    raise ValueError("ZIP CRC/size mismatch: " + clean)
+    except Exception:
+        _cleanup(created_files, created_folders)
+        raise
     return destination

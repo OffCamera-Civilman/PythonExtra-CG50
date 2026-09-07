@@ -98,21 +98,62 @@ static mp_uint_t fdfile_write(mp_obj_t o_in, const void *buf, mp_uint_t size, in
     return r;
 }
 
+typedef struct {
+    int fd;
+    int whence;
+    off_t offset;
+    off_t result;
+    int error;
+} fdfile_seek_call_t;
+
+/* Marshal off_t through memory: gint calls accept register-sized arguments,
+   whereas the libc offset type may be wider on a supported toolchain. */
+static int fdfile_world_seek(void *data) {
+    fdfile_seek_call_t *call = data;
+    call->result = lseek(call->fd, call->offset, call->whence);
+    call->error = errno;
+    return call->result == (off_t)-1 ? -1 : 0;
+}
+
 static mp_uint_t fdfile_ioctl(mp_obj_t o_in, mp_uint_t request, uintptr_t arg, int *errcode) {
-    (void)o_in;
-    (void)request;
-    (void)arg;
-    (void)errcode;
-    // FIXME: implement seek/flush correctly for the calculator target.
-    return 0;
+    mp_obj_fdfile_t *o = MP_OBJ_TO_PTR(o_in);
+    check_fd_is_open(o);
+
+    if (request == MP_STREAM_SEEK) {
+        struct mp_stream_seek_t *seek = (struct mp_stream_seek_t *)arg;
+        fdfile_seek_call_t call = {
+            .fd = o->fd, .whence = seek->whence, .offset = seek->offset
+        };
+        int result = gint_world_switch(
+            GINT_CALL(fdfile_world_seek, (void *)&call));
+        if (result < 0) {
+            *errcode = call.error;
+            return MP_STREAM_ERROR;
+        }
+        seek->offset = call.result;
+        return 0;
+    }
+
+    /* fdfile is unbuffered, so every successful write has already reached the
+       calculator filesystem bridge. There is no userspace buffer to flush. */
+    if (request == MP_STREAM_FLUSH) {
+        return 0;
+    }
+
+    *errcode = MP_EINVAL;
+    return MP_STREAM_ERROR;
 }
 
 static mp_obj_t fdfile_close(mp_obj_t self_in) {
     mp_obj_fdfile_t *self = MP_OBJ_TO_PTR(self_in);
-    (int) gint_world_switch( GINT_CALL( close, self->fd) );
-#ifdef MICROPY_CPYTHON_COMPAT
+    if (self->fd < 0) {
+        return mp_const_none;
+    }
+    int result = (int) gint_world_switch( GINT_CALL( close, self->fd) );
     self->fd = -1;
-#endif
+    if (result < 0) {
+        mp_raise_OSError(errno);
+    }
     return mp_const_none;
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(fdfile_close_obj, fdfile_close);

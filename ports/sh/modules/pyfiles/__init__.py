@@ -87,6 +87,21 @@ def _mode_string(path):
     except Exception: return "---"
 
 
+def _modified_text(value):
+    # The calculator filesystem may not supply mtime. Do not invent dates
+    # for unset fields or display arbitrary integer data as a real timestamp.
+    try:
+        if not value or value < 0 or value > 0xffffffff:
+            return "Unavailable"
+        import time
+        stamp = time.localtime(value)
+        if not 1980 <= stamp[0] <= 2106:
+            return "Unavailable"
+        return "%04d-%02d-%02d %02d:%02d:%02d" % stamp[:6]
+    except (AttributeError, ValueError, TypeError, OverflowError):
+        return "Unavailable"
+
+
 def _remove_tree(path):
     """Best-effort cleanup used only for destinations created by copy."""
     try:
@@ -376,7 +391,7 @@ class Browser:
         g.dtext(116, 125, p[1], _mode_string(path))
         if len(st) > 8:
             g.dtext(8, 142, p[3], "Modified:")
-            g.dtext(116, 142, p[1], str(st[8])[:28])
+            g.dtext(116, 142, p[1], _modified_text(st[8]))
         self.draw_softkeys(("OPEN", "EDIT", "COMP", action, "", "CALC"))
 
     def checksum_ui(self, path, st=None):
@@ -478,15 +493,15 @@ class Browser:
             if self.popup("Unknown/binary type", ("Edit as text", "Cancel")) != "Edit as text": return
         try:
             pyperm.require_read(path)
-            result = self.pyeditor.open_file(path, self.theme_name)
-            if result == "run" and path.lower().endswith(".py"): self.run_file(path)
+            # The editor executes F1/Run itself. Do not run the script a second
+            # time when control returns to Files.
+            self.pyeditor.open_file(path, self.theme_name)
             self.refresh()
         except Exception as exc: self.msg = "Edit " + str(exc)[:12]
 
     def open_editor(self):
         try:
-            result = self.pyeditor.new_file(_join(self.folder, "new.py"), self.theme_name)
-            if result == "run": self.run_file(_join(self.folder, "new.py"))
+            self.pyeditor.new_file(_join(self.folder, "new.py"), self.theme_name)
             self.refresh()
         except Exception as exc:
             self.msg = "Editor " + str(exc)[:10]
@@ -650,6 +665,9 @@ class Browser:
         if not name: return
         if not name.lower().endswith(".zip"): name += ".zip"
         archive = _join(self.folder, name)
+        if _exists(archive):
+            self.msg = "ZIP exists"
+            return
         try:
             pyperm.require_read(path)
             zipfile.compress(path, archive); self.msg = "ZIP created"; self.refresh()

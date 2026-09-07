@@ -159,7 +159,9 @@ MP_DEFINE_CONST_FUN_OBJ_1(pe_os_rmdir_obj, pe_os_rmdir);
 static mp_obj_t pe_os_stat(mp_obj_t path_in)
 {
     char path[PE_PATH_MAX];
-    struct stat st;
+    /* Some fxlibc/OS backends leave unsupported fields untouched. Never
+       expose uninitialized stack bytes as timestamps or identifiers. */
+    struct stat st = {0};
     pe_os_path(path_in, path, sizeof path);
     pe_os_check(pe_os_world_int(GINT_CALL(pe_ws_stat,
         (void *)path, (void *)&st)));

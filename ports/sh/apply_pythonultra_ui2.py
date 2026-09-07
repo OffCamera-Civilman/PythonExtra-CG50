@@ -210,6 +210,32 @@ static void pe_run_python_action(char const *code)
     PE.scene->widget.update = true;
 }
 
+static void pe_insert_catalog_selection(void)
+{
+    /* Preserve the edit line and cursor. A picker result is input, not code
+       to execute through pyexec_repl_execute(). */
+    font_t const *previous_font = dfont(NULL);
+    nlr_buf_t nlr;
+    if(nlr_push(&nlr) == 0) {
+        mp_obj_t module = mp_import_name(MP_QSTR_pythonultra,
+            mp_const_none, MP_OBJ_NEW_SMALL_INT(0));
+        mp_obj_t function = mp_load_attr(module, MP_QSTR_catalog_insert_ui);
+        mp_obj_t result = mp_call_function_1(function, mp_obj_new_bool(pe_dark_mode));
+        if(result != mp_const_none) {
+            size_t length;
+            char const *text = mp_obj_str_get_data(result, &length);
+            console_write_raw(PE.console, text, length);
+        }
+        nlr_pop();
+    }
+    else {
+        mp_obj_print_exception(&mp_plat_print, MP_OBJ_FROM_PTR(nlr.ret_val));
+    }
+    dfont(previous_font);
+    pe_apply_theme();
+    PE.scene->widget.update = true;
+}
+
 static int pe_terminal_dispatch(char const *line)
 {
     int action = 0;
@@ -315,10 +341,7 @@ static int pe_terminal_dispatch(char const *line)
     if(!shell_bound && show_shell)
         pe_show_shell();
     if(!shell_bound && key == KEY_F3) {
-        if(pe_dark_mode)
-            pe_run_python_action("import pythonultra as _pu; _pu.catalog_ui(True)");
-        else
-            pe_run_python_action("import pythonultra as _pu; _pu.catalog_ui(False)");
+        pe_insert_catalog_selection();
     }
     if(!shell_bound && key == KEY_F4) {
         pe_dark_mode = !pe_dark_mode;
