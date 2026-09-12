@@ -228,15 +228,17 @@ jobs:
         run: python3 tests/ports/sh/pygame_compat.py
 
       - name: Test runtime documentation in MicroPython
-        run: python3 tests/ports/sh/runtime_docs_host.py
+        run: |
+          # Source preparation scripts compose in order; run the sequence once.
+          make -C ports/fxcg50 pythonultra-runtime-fixes
+          python3 tests/ports/sh/runtime_docs_host.py --prepared
 
       - name: Build PythonUltra for fx-CG50
         shell: bash
         run: |
           set -euo pipefail
           export PATH="$HOME/.local/bin:$PATH"
-          # Finish source-generation patches before parallel QSTR/compile work.
-          make -C ports/fxcg50 pythonultra-runtime-fixes
+          # Source preparation and documentation tests completed above.
           make -C ports/fxcg50 -j2 PYTHONULTRA_RUNTIME_PREPARED=1
 
       - name: Smoke-check G3A and REPL surface
