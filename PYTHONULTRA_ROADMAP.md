@@ -1,7 +1,7 @@
 # PythonUltra master list
 
 Shared running task list for `OffCamera-Civilman/PythonExtra-CG50`, branch `cg50-new-display`.
-Reconciled through 2026-09-12 against source, build patches, tests, run #132 at `49964644b233`, and user hardware reports. This file is the canonical task list; update it with every feature/fix handoff. Never infer hardware success from a green compiler run or from a Catalog entry alone.
+Reconciled through 2026-09-12 against source, build patches, tests, run #135 at `f718931c7836`, and user hardware reports. This file is the canonical task list; update it with every feature/fix handoff. Never infer hardware success from a green compiler run or from a Catalog entry alone.
 
 ## Status rules
 
@@ -50,6 +50,7 @@ provenance for the modified build remains unresolved.
   ROM reference. Real MicroPython tests cover native/frozen functions, classes,
   bound methods and import-free lookup. Ship the verified candidate and test
   help(vec3), vec3.__doc__, math.sqrt and Surface.set_colorkey on the calculator.
+  Build #135 passes (630,404 bytes); see [the runtime-help receipt](docs/pythonultra/runtime-help-run135.md).
   Arbitrary user-defined function docstrings are not retained by the compiler.
 - [x] Deliver a ZIP containing a plain-text reference for EVERY bundled module,
   with purpose, examples, exact supported syntax and function/method details.
