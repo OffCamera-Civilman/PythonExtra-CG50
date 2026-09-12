@@ -30,15 +30,12 @@ provenance for the modified build remains unresolved.
   The real MicroPython input smoke and calculator build pass; hardware pending.
 - [ ] ZIP: reproduce and fix the 42,074-byte compression hang; keep failed
   output cleanup and standard archive round trips.
-- [ ] Pygame: fix slow/disappearing moving sprites after set_colorkey((0,0,0));
-  test clipping and movement, not only a static transparency image.
-  Current priority: native RGB565 keyed drawing replaces the per-pixel Python
-  path, crops source/destination rectangles, and preserves keys on transforms.
-  Native host pixel-oracle tests and calculator build #131 pass, but the user
-  reports the supplied motion demo displays a white screen. Reproduced cause:
-  importing gint inside the frame loop clears VRAM after the sprites are drawn.
-  The run #132 demo imports before drawing, and a whole-script test simulates
-  the port's repeated builtin initializer. Physical movement remains unverified.
+- [x] Pygame color-key fix: user confirms run #131 works flawlessly on the
+  calculator after moving `import gint` from the animation loop to the top of
+  `colorkey_motion.py`, immediately after `import pygame` (2026-09-12 note).
+  The white screen was the demo's repeated-import VRAM clear. Run #132 already
+  ships the corrected script. Native clipping/transform tests also pass.
+  This hardware report does not specify OS/display revision or measured FPS.
 - [ ] Files Open: wrap long text and make the entire file navigable.
 - [ ] Dark themes: black canvas/dialog backgrounds across all screens.
   Run #132 sets dark editor/Files canvases and bars to black, clears the
@@ -48,8 +45,12 @@ provenance for the modified build remains unresolved.
   user-drawn game colors retain their own palettes. Hardware check pending.
 - [ ] Icon: lighter dark-gray background and black accents around letters.
   Use the recovered run130.1 snake/PU emblem as the artwork reference.
-- [ ] Runtime documentation: useful help(function) and function.__doc__,
-  including py3d.vec3; ordinary object representations do not satisfy this.
+- [ ] Runtime documentation hardware acceptance: source now exposes useful
+  help(function) and function.__doc__, including py3d.vec3, via the shared
+  ROM reference. Real MicroPython tests cover native/frozen functions, classes,
+  bound methods and import-free lookup. Ship the verified candidate and test
+  help(vec3), vec3.__doc__, math.sqrt and Surface.set_colorkey on the calculator.
+  Arbitrary user-defined function docstrings are not retained by the compiler.
 - [x] Deliver a ZIP containing a plain-text reference for EVERY bundled module,
   with purpose, examples, exact supported syntax and function/method details.
   Keep the source and generation/check command in this repository. Update the
@@ -58,7 +59,7 @@ provenance for the modified build remains unresolved.
   submodule text files, 1,283 inventoried member/alias/constant names. Generated
   from the prepared source at `49964644b233`, including native color-key drawing,
   the corrected import guidance and editor shortcut/case semantics.
-  Runtime help/function docstrings remain a separate unchecked item above.
+  Runtime help now uses the same descriptions; its hardware gate is above.
 - [ ] Explain version labels and changes: the source is MicroPython
   1.25.0-preview; 3.4.0 in sys.version is a Python compatibility label.
 
@@ -123,7 +124,7 @@ interpreter. **Hardware confirmation of these corrections remains open.**
 | Interactive Python REPL | Implemented | `ports/sh/main.c`, `pyexec.c`, `widget_shell.c`; preserved alongside the terminal. |
 | Compact Pygame | Implemented; base build hardware-tested | Frozen `modules/pygame`, `tests/ports/sh/pygame_compat.py` and `pygame_cg50_regression.py`. Surface/Rect, drawing, display, keys/events, fonts, images, transforms, Sprite/Group/GroupSingle and collisions. No sound/network/SDL windows. |
 | Pygame game clock | Implemented | `pygame.time.Clock` includes frame timing. This is not a date/time settings interface or a standalone `time.Clock`. |
-| BMP color-key transparency | Candidate fixed; verify hardware | Native drawing from #131 is retained. The #131 demo white screen was reproduced as a repeated gint-import clear, fixed in #132's script. Six regressions cover native pixels plus the shipped demo. Retest actual movement and the user's BMP game on hardware. |
+| BMP color-key transparency | Verified by user on run #131 with corrected demo | 2026-09-12: user moved import gint to the top after import pygame and reports flawless operation. Run #132 already ships that correction. Six regressions cover native pixels and the demo; OS/revision and measured FPS were not supplied. |
 | Compact NumPy matrices/vectors | Implemented | Frozen `modules/numpy`, `apply_pythonultra_features.py`, `numpy_compat.py`: transpose/inverse, dot/matmul, cross/norm/normalize/lerp and array helpers. No desktop-NumPy claim. |
 | Native filled triangles | Implemented | `modgint.c::modgint_dtriangle`, `gint.dtriangle(...)`. |
 | py3d first engine | Implemented | `modules/py3d`, `py3d_compat.py`, rotating-cube demo: transforms, projection, back-face culling, painter sorting, simple lighting, native rasterization, wireframe. |

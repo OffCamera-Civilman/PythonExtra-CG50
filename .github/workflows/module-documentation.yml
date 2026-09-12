@@ -26,7 +26,9 @@ jobs:
           python3 ports/sh/apply_pythonultra_ui3_compat.py
           python3 ports/sh/apply_pythonultra_symbols.py
       - name: Generate and check module reference
-        run: python3 tools/pythonultra_docs.py --output build-module-docs/reference
+        run: python3 tools/pythonultra_docs.py --output build-module-docs/reference --runtime-header ports/sh/module_docs.h
+      - name: Test runtime documentation in MicroPython
+        run: python3 tests/ports/sh/runtime_docs_host.py --prepared
       - uses: actions/upload-artifact@v4
         with:
           name: PythonUltra-Module-Documentation

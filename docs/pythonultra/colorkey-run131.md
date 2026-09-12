@@ -1,15 +1,22 @@
 # Color-key sprite correction: run #131
 
-**Later hardware report:** the original bundled demo showed a white screen.
-Its loop re-imported gint after drawing, invoking the port's builtin initializer
-and clearing VRAM. Use the corrected demo from [run #132](ui-run132.md), which
-moves imports before drawing. This explains the demo failure but does not
-replace the outstanding physical-calculator sprite-movement test.
+**Hardware confirmation, 2026-09-12:** the user confirms run #131's color-key
+fix works on their calculator. They moved `import gint` out of the
+`colorkey_motion.py` frame loop to the top of the file immediately after
+`import pygame` and report that it "works flawlessly." The white screen was
+caused by the demo re-importing gint after drawing and clearing VRAM, not a
+failure of run #131's native sprite fix. The repository already ships this
+corrected import order in [run #132](ui-run132.md).
+
+Record this as a user-confirmed pass for run #131 with the corrected script.
+The note does not specify calculator OS/display revision or a measured FPS;
+do not infer a test on both revisions or a separate original-game test.
 
 The user reported that `set_colorkey((0, 0, 0))` removed the black sprite
 background but movement became slow, with sprites disappearing and reappearing
 partway across the screen. This candidate addresses the expensive drawing path
-and related clipping/transform defects. Hardware confirmation remains open.
+and related clipping/transform defects. The corrected demo is now confirmed
+working by the user, as recorded above.
 
 ## Build receipt
 

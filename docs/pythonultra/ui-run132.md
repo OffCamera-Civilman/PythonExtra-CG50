@@ -4,6 +4,11 @@ The user reported a white screen when running the run131 color-key demo and
 white canvas around dark-mode Catalog dialogs. This candidate corrects those
 reports and the previously reported editor keys/repeats.
 
+**2026-09-12 follow-up:** the user confirms run #131 works flawlessly after
+moving `import gint` to the top of the demo. See [the updated run131
+receipt](colorkey-run131.md). This confirms the color-key fix; run132's editor
+and dark-mode changes still require their own calculator checks.
+
 ## Verified build
 
 - [Successful fx-CG50 run #132](https://github.com/OffCamera-Civilman/PythonExtra-CG50/actions/runs/34698081817).
@@ -22,7 +27,8 @@ The original demo imported gint inside the animation loop, after sprite
 drawing. `MICROPY_MODULE_BUILTIN_INIT` is enabled, `mp_module_get_builtin()`
 invokes the module initializer, and `modgint___init__()` clears VRAM white and
 resets the font. This made the demo erase each frame. This was an error in the
-supplied demo, not evidence of a working hardware sprite test.
+supplied demo. The later user report above supplies the hardware confirmation
+for run131 with the corrected import order.
 
 The corrected script imports gint before initialization/drawing. A regression
 runs the actual shipped script while simulating the port's repeated import

@@ -10,6 +10,8 @@ on:
       - "extmod/**"
       - "shared/**"
       - "tests/**"
+      - "tools/pythonultra_doc*"
+      - "docs/library/**"
       - "logo/run130-1-icon.png"
       - ".github/workflows/build-cg50.yml"
   workflow_dispatch:
@@ -225,6 +227,9 @@ jobs:
         shell: bash
         run: python3 tests/ports/sh/pygame_compat.py
 
+      - name: Test runtime documentation in MicroPython
+        run: python3 tests/ports/sh/runtime_docs_host.py
+
       - name: Build PythonUltra for fx-CG50
         shell: bash
         run: |
@@ -257,6 +262,7 @@ jobs:
               b"pygame": "pygame compatibility package",
               b"dsubimage_colorkey": "native color-key sprite drawing",
               b"py3d": "software 3D package",
+              b"vec3(x=0.0, y=0.0, z=0.0)": "ROM-backed runtime documentation",
               b"pyeditor": "text editor",
               b"pyfiles": "file manager",
               b"pyterm": "terminal command layer",
