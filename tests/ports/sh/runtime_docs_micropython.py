@@ -11,6 +11,8 @@ assert vec3(1, 2, 3) == (1.0, 2.0, 3.0)
 assert 'vec3(x=0.0, y=0.0, z=0.0)' in vec3.__doc__
 assert 'tuple' in vec3.__doc__
 assert getattr(vec3, '__doc__') == vec3.__doc__
+assert {vec3.__doc__: 1}[vec3.__doc__] == 1
+assert hash(vec3.__doc__) == hash(str(vec3.__doc__))
 assert 'square root' in math.sqrt.__doc__
 assert 'Example:' in py3d.__doc__
 help(vec3)

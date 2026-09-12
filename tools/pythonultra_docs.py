@@ -257,7 +257,7 @@ def runtime_table(root, docs, inventory, destination):
         # C universal escapes cannot represent every control character.
         literal = re.sub(r'\\u00([0-1][0-9a-f]|7f)',
                          lambda m: '\\' + format(int(m[1], 16), '03o'), literal)
-        lines.append('static MP_DEFINE_STR_OBJ(mp_doc_text_' + str(number) + ', ' + literal + ');')
+        lines.append('static const MP_DEFINE_STR_OBJ(mp_doc_text_' + str(number) + ', ' + literal + ');')
     lines += ['static const mp_doc_entry_t mp_doc_entries[] = {', *records, '};', '']
     destination.parent.mkdir(parents=True, exist_ok=True)
     content = '\n'.join(lines)
