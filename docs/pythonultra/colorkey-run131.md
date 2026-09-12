@@ -1,5 +1,11 @@
 # Color-key sprite correction: run #131
 
+**Later hardware report:** the original bundled demo showed a white screen.
+Its loop re-imported gint after drawing, invoking the port's builtin initializer
+and clearing VRAM. Use the corrected demo from [run #132](ui-run132.md), which
+moves imports before drawing. This explains the demo failure but does not
+replace the outstanding physical-calculator sprite-movement test.
+
 The user reported that `set_colorkey((0, 0, 0))` removed the black sprite
 background but movement became slow, with sprites disappearing and reappearing
 partway across the screen. This candidate addresses the expensive drawing path

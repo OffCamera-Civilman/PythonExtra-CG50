@@ -1,7 +1,7 @@
 # PythonUltra master list
 
 Shared running task list for `OffCamera-Civilman/PythonExtra-CG50`, branch `cg50-new-display`.
-Reconciled through 2026-09-12 against source, build patches, tests, run #131 at `7f90654337b2`, and user hardware reports. This file is the canonical task list; update it with every feature/fix handoff. Never infer hardware success from a green compiler run or from a Catalog entry alone.
+Reconciled through 2026-09-12 against source, build patches, tests, run #132 at `49964644b233`, and user hardware reports. This file is the canonical task list; update it with every feature/fix handoff. Never infer hardware success from a green compiler run or from a Catalog entry alone.
 
 ## Status rules
 
@@ -24,9 +24,10 @@ provenance for the modified build remains unresolved.
 
 - [ ] Editor: SHIFT in alpha mode must show and enter uppercase; SHIFT+VARS
   opens Style, F6 opens Symbols (label Sym); cursor repeats stop on release.
-  Next candidate implements these controls and drains releases before acting
+  Run #132 implements these controls and drains releases before acting
   on a coalesced repeat. Typed key presses retain their ordering; tests cover
   shifted alpha letters on numeric shortcut keys and filename/symbol prompts.
+  The real MicroPython input smoke and calculator build pass; hardware pending.
 - [ ] ZIP: reproduce and fix the 42,074-byte compression hang; keep failed
   output cleanup and standard archive round trips.
 - [ ] Pygame: fix slow/disappearing moving sprites after set_colorkey((0,0,0));
@@ -36,11 +37,11 @@ provenance for the modified build remains unresolved.
   Native host pixel-oracle tests and calculator build #131 pass, but the user
   reports the supplied motion demo displays a white screen. Reproduced cause:
   importing gint inside the frame loop clears VRAM after the sprites are drawn.
-  The corrected demo imports before drawing, and a whole-script test simulates
+  The run #132 demo imports before drawing, and a whole-script test simulates
   the port's repeated builtin initializer. Physical movement remains unverified.
 - [ ] Files Open: wrap long text and make the entire file navigable.
 - [ ] Dark themes: black canvas/dialog backgrounds across all screens.
-  Next candidate sets dark editor/Files canvases and bars to black, clears the
+  Run #132 sets dark editor/Files canvases and bars to black, clears the
   full Catalog/Info/Symbol modal canvas (including outside the colored border),
   and applies the native theme to the whole scene. Also select the popup font
   after the final gint import, which otherwise resets it. Light themes and
@@ -53,9 +54,10 @@ provenance for the modified build remains unresolved.
   with purpose, examples, exact supported syntax and function/method details.
   Keep the source and generation/check command in this repository. Update the
   references and ZIP whenever a library or public functionality is changed.
-  Updated for run #131: `PythonUltra-Module-Documentation.zip`, 43 module and
+  Updated for run #132: `PythonUltra-Module-Documentation.zip`, 43 module and
   submodule text files, 1,283 inventoried member/alias/constant names. Generated
-  from the prepared source at `7f90654337b2`, including native color-key drawing.
+  from the prepared source at `49964644b233`, including native color-key drawing,
+  the corrected import guidance and editor shortcut/case semantics.
   Runtime help/function docstrings remain a separate unchecked item above.
 - [ ] Explain version labels and changes: the source is MicroPython
   1.25.0-preview; 3.4.0 in sys.version is a Python compatibility label.
@@ -64,6 +66,18 @@ PicoC, adjustable date/time and truthful persistent file timestamps remain
 open below. The new reports do not mark those capabilities completed.
 
 ## Current correction release
+
+Candidate **run #132** passed GitHub Actions on 2026-09-12, commit
+`49964644b233fa131c380c1b5d528e32f4e80c90`.
+Download: `PythonUltra-CG50-run132.g3a`, **447,228 bytes**.
+SHA-256: `9bbda5c68da8a5643f90f230596a5fc038a216ebbf2b7e66de1edf4ed12e030a`.
+[Build and artifact](https://github.com/OffCamera-Civilman/PythonExtra-CG50/actions/runs/34698081817).
+Corrects the shipped motion demo's white-screen import error, editor key
+handling, black dark-mode canvases and modal font reset. All prepared runtime
+regressions, module-reference generation and G3A integrity checks pass. Hardware
+acceptance remains open. [Receipt and test steps](docs/pythonultra/ui-run132.md).
+
+Previous color-key candidate (original demo reported white on hardware):
 
 Candidate **run #131** passed GitHub Actions on 2026-09-12, commit
 `7f90654337b28f6fcba6b7f73fe424aeffd090f6`.
@@ -99,7 +113,7 @@ interpreter. **Hardware confirmation of these corrections remains open.**
 | Configurable menu border color | Implemented; verify hardware | Named color, `#RRGGBB` or RGB565 integer in RC. Preserve the supplied run130.1 red fallback and terminal-startup template; existing RC choices still take precedence, and absent/invalid startup in an existing RC falls back to Files. |
 | File information Modified field | Active fix | User photo shows an implausible integer. Initialize native stat fields, display a valid stored date/time or Unavailable, and complete the clock/timestamp work below. |
 | Filesystem reset regressions | Active fix / verify | World-switch corrections exist (`aa09418`, `c447fca`, `d38dcac`). Retest ls/listdir, mkdir, rename/move, remove/rmdir, stat and ZIP on both revisions. |
-| Numbered deliverables | Implemented | Run #131 uploads `PythonUltra-CG50-run131.g3a` with a checksum, source commit, motion demo and matching module reference; continue this naming for future runs. |
+| Numbered deliverables | Implemented | Run #132 uploads `PythonUltra-CG50-run132.g3a` with a checksum, source commit, corrected motion demo and matching module reference; continue this naming for future runs. |
 
 ## Already built — do not schedule from scratch
 
@@ -109,7 +123,7 @@ interpreter. **Hardware confirmation of these corrections remains open.**
 | Interactive Python REPL | Implemented | `ports/sh/main.c`, `pyexec.c`, `widget_shell.c`; preserved alongside the terminal. |
 | Compact Pygame | Implemented; base build hardware-tested | Frozen `modules/pygame`, `tests/ports/sh/pygame_compat.py` and `pygame_cg50_regression.py`. Surface/Rect, drawing, display, keys/events, fonts, images, transforms, Sprite/Group/GroupSingle and collisions. No sound/network/SDL windows. |
 | Pygame game clock | Implemented | `pygame.time.Clock` includes frame timing. This is not a date/time settings interface or a standalone `time.Clock`. |
-| BMP color-key transparency | Candidate fixed; verify hardware | Run #131 replaces per-pixel Python screen drawing with one native call, clips both rectangles, and preserves keys through transforms. Five native/Python regressions pass; test the user's moving BMP sprite and bundled motion demo on hardware. |
+| BMP color-key transparency | Candidate fixed; verify hardware | Native drawing from #131 is retained. The #131 demo white screen was reproduced as a repeated gint-import clear, fixed in #132's script. Six regressions cover native pixels plus the shipped demo. Retest actual movement and the user's BMP game on hardware. |
 | Compact NumPy matrices/vectors | Implemented | Frozen `modules/numpy`, `apply_pythonultra_features.py`, `numpy_compat.py`: transpose/inverse, dot/matmul, cross/norm/normalize/lerp and array helpers. No desktop-NumPy claim. |
 | Native filled triangles | Implemented | `modgint.c::modgint_dtriangle`, `gint.dtriangle(...)`. |
 | py3d first engine | Implemented | `modules/py3d`, `py3d_compat.py`, rotating-cube demo: transforms, projection, back-face culling, painter sorting, simple lighting, native rasterization, wireframe. |
