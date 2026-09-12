@@ -5,6 +5,8 @@ should continue across both screen edges without disappearing in mid-screen.
 No external BMP is required. This checks the same Surface.blit path as BMPs.
 """
 import pygame
+import gint
+# Import gint before drawing: this port's builtin import hook clears VRAM.
 pygame.init()
 screen = pygame.display.set_mode((396, 224))
 clock = pygame.time.Clock()
@@ -34,7 +36,6 @@ try:
             pygame.draw.line(screen, (60, 90, 110), (gx, 35), (gx, 223))
         screen.blit(black, (x, 75))
         screen.blit(magenta, (364 - x, 140))
-        import gint
         gint.dtext(3, 3, gint.C_WHITE, 'Color key ' + ('ON' if enabled else 'OFF'))
         gint.dtext(3, 16, gint.C_WHITE, 'F1 toggle   EXIT quit')
         pygame.display.flip()

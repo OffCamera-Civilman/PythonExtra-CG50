@@ -24,17 +24,27 @@ provenance for the modified build remains unresolved.
 
 - [ ] Editor: SHIFT in alpha mode must show and enter uppercase; SHIFT+VARS
   opens Style, F6 opens Symbols (label Sym); cursor repeats stop on release.
+  Next candidate implements these controls and drains releases before acting
+  on a coalesced repeat. Typed key presses retain their ordering; tests cover
+  shifted alpha letters on numeric shortcut keys and filename/symbol prompts.
 - [ ] ZIP: reproduce and fix the 42,074-byte compression hang; keep failed
   output cleanup and standard archive round trips.
 - [ ] Pygame: fix slow/disappearing moving sprites after set_colorkey((0,0,0));
   test clipping and movement, not only a static transparency image.
   Current priority: native RGB565 keyed drawing replaces the per-pixel Python
   path, crops source/destination rectangles, and preserves keys on transforms.
-  Native host pixel-oracle tests and calculator build #131 pass. The supplied
-  `colorkey_motion.py` exercises both screen edges and black/nonblack keys.
-  Physical-calculator movement confirmation remains pending.
+  Native host pixel-oracle tests and calculator build #131 pass, but the user
+  reports the supplied motion demo displays a white screen. Reproduced cause:
+  importing gint inside the frame loop clears VRAM after the sprites are drawn.
+  The corrected demo imports before drawing, and a whole-script test simulates
+  the port's repeated builtin initializer. Physical movement remains unverified.
 - [ ] Files Open: wrap long text and make the entire file navigable.
 - [ ] Dark themes: black canvas/dialog backgrounds across all screens.
+  Next candidate sets dark editor/Files canvases and bars to black, clears the
+  full Catalog/Info/Symbol modal canvas (including outside the colored border),
+  and applies the native theme to the whole scene. Also select the popup font
+  after the final gint import, which otherwise resets it. Light themes and
+  user-drawn game colors retain their own palettes. Hardware check pending.
 - [ ] Icon: lighter dark-gray background and black accents around letters.
   Use the recovered run130.1 snake/PU emblem as the artwork reference.
 - [ ] Runtime documentation: useful help(function) and function.__doc__,

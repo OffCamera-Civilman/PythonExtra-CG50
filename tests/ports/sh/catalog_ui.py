@@ -1,5 +1,6 @@
 """Catalog names, cancellation, bounded popup layout and native insertion."""
 import importlib.util
+import builtins
 from pathlib import Path
 import sys
 import types
@@ -42,6 +43,9 @@ class FakeGint(types.ModuleType):
         self.frames = []
         self.font = "large"
         self.drains = 0
+        self.backgrounds = []
+    def dclear(self, color):
+        self.backgrounds.append(color)
     def dfont_builtin(self, name):
         self.font = name
     def dfont(self, font):
@@ -66,7 +70,22 @@ class FakeGint(types.ModuleType):
 g = FakeGint()
 sys.modules["gint"] = g
 g.keys = [g.KEY_DOWN, g.KEY_EXE]
-assert ui.popup("Long menu title " * 5, ("first", "second" * 50), True) == "second" * 50
+original_import = builtins.__import__
+def importing(name, *args, **kwargs):
+    result = original_import(name, *args, **kwargs)
+    if name == 'gint':
+        # Match modgint___init__: a repeated import resets the default font
+        # and white background, which the popup must explicitly override.
+        g.font = 'default'
+        g.dclear(0xffff)
+    return result
+try:
+    builtins.__import__ = importing
+    assert ui.popup("Long menu title " * 5, ("first", "second" * 50), True) == "second" * 50
+finally:
+    builtins.__import__ = original_import
+assert g.backgrounds[-2:] == [0, 0]
+assert ui.UI_DARK['bg'] == ui.UI_DARK['bar'] == 0
 assert g.font == "default"
 assert g.drains == 1
 assert g.frames[0][4] == 0xF800
@@ -75,6 +94,7 @@ for x, y, color, text in g.text:
     assert 0 <= y and y + 10 <= 224
 g.keys = [g.KEY_EXIT]
 assert ui.popup("Cancel", ("first",)) is None
+assert g.backgrounds[-1] == 0xffff
 g.keys = [g.KEY_2]
 assert ui.popup("Number select", ("first", "second")) == "second"
 
@@ -90,4 +110,6 @@ assert "console_clear_current_line(" not in helper
 assert "pyexec_repl_execute(code)" not in helper
 assert "dfont(previous_font);" in helper
 assert "pe_run_python_action(\"import pythonultra as _pu; _pu.catalog_ui" not in main
+assert 'void pe_draw(void)\n{\n    dclear(pe_dark_mode ? C_BLACK : C_WHITE);' in main
+assert 'jwidget_set_background(PE.scene, background);' in main
 print("PythonUltra Catalog insertion/color/layout checks passed")

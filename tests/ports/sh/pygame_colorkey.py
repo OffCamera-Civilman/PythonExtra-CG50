@@ -1,5 +1,6 @@
 """Pixel oracle for the actual native blitter and Pygame routing/transforms."""
 import ctypes
+import builtins
 from pathlib import Path
 import random
 import subprocess
@@ -73,6 +74,52 @@ class ColorKeyTests(unittest.TestCase):
                     sx = tx - x
                     expected = 0xf800 if 0 <= sx < 56 and (sx + sy) % 3 else 0x2121
                     self.assertEqual(self.fb[(83 + sy) * 396 + tx], expected)
+
+    def test_shipped_motion_demo_survives_repeated_builtin_import_init(self):
+        # MicroPython's enabled builtin-init hook calls gint.__init__ on each
+        # import. That clears VRAM white; desktop Python imports do not do so.
+        names = ('__init__', 'dclear', 'dupdate', 'image_rgb565')
+        saved = {name: getattr(gint, name) for name in names}
+        original_import = builtins.__import__
+        old_get, old_tick = pygame.event.get, pygame.Clock.tick
+        old_clip = self.screen.get_clip()
+        frames = []
+        gint.C_WHITE = 0xffff
+        def clear(color):
+            for i in range(len(self.fb)):
+                self.fb[i] = color
+        def make_image(w, h, data):
+            image = saved['image_rgb565'](w, h, data)
+            image.format = 0
+            return image
+        def importing(name, *args, **kwargs):
+            result = original_import(name, *args, **kwargs)
+            if name == 'gint':
+                gint.__init__()
+            return result
+        events = iter(([], [], [pygame.event.Event(pygame.QUIT)]))
+        try:
+            self.screen.set_clip(None)
+            gint.dclear = clear
+            gint.__init__ = lambda: clear(0xffff)
+            gint.image_rgb565 = make_image
+            gint.dupdate = lambda: frames.append(list(self.fb))
+            pygame.event.get = lambda: next(events)
+            pygame.Clock.tick = lambda *args: 0
+            builtins.__import__ = importing
+            code = (ROOT / 'ports/sh/examples/colorkey_motion.py').read_text()
+            exec(compile(code, 'colorkey_motion.py', 'exec'), {'__name__': '__main__'})
+        finally:
+            builtins.__import__ = original_import
+            pygame.event.get, pygame.Clock.tick = old_get, old_tick
+            self.screen.set_clip(old_clip)
+            for name, value in saved.items():
+                setattr(gint, name, value)
+        self.assertGreaterEqual(len(frames), 2)
+        for frame in frames:
+            self.assertEqual(frame[50 * 396 + 10], pygame._color565((24, 48, 80)))
+        self.assertTrue(any(pygame._color565((0, 255, 255)) in frame for frame in frames),
+                        'No cyan sprite entered the visible screen')
 
     def test_source_area_and_destination_clip_agree_with_offscreen(self):
         sprite = self.sprite(8, 7)
