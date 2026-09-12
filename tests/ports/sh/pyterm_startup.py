@@ -29,10 +29,11 @@ def reload_from(path):
 with tempfile.TemporaryDirectory() as temp_root:
     root = Path(temp_root)
 
-    # Missing RC creates a template and defaults to Files.
+    # Preserve the run130.1 template. Missing/invalid startup in an existing
+    # RC still falls back to Files; an explicit RC selection wins.
     missing = root / "default.rc"
-    assert reload_from(missing) == 1
-    assert "set startup=files" in missing.read_text(encoding="utf-8")
+    assert reload_from(missing) == 0
+    assert "set startup=terminal" in missing.read_text(encoding="utf-8")
 
     terminal = root / "terminal.rc"
     terminal.write_text("set startup=terminal\n", encoding="utf-8")
@@ -46,19 +47,19 @@ with tempfile.TemporaryDirectory() as temp_root:
     invalid.write_text("set startup=automatic\n", encoding="utf-8")
     assert reload_from(invalid) == 1
 
-    assert pyterm.menu_border() == 0x07FF
+    assert pyterm.menu_border() == 0xF800
     colors = root / "colors.rc"
     for spec, expected in (("red", 0xF800), ("'#00ff00'", 0x07E0),
                            ("0x001f", 0x001F), ("black", 0),
                            ("#ff0000", 0xF800), ("#ffffff", 0xFFFF),
-                           ("invalid", 0x07FF), ("0x10000", 0x07FF),
-                           ("#zzffff", 0x07FF)):
+                           ("invalid", 0xF800), ("0x10000", 0xF800),
+                           ("#zzffff", 0xF800)):
         colors.write_text("set menu_border=" + spec + "\n", encoding="utf-8")
         reload_from(colors)
         assert pyterm.menu_border() == expected, spec
-    # Removing the setting and reloading restores cyan, not a stale override.
+    # Removing the setting restores the supplied run130.1 red default.
     reload_from(terminal)
-    assert pyterm.menu_border() == 0x07FF
+    assert pyterm.menu_border() == 0xF800
     assert pyterm.dispatch("modules") == 41
 
 main = MAIN_PATH.read_text(encoding="utf-8")

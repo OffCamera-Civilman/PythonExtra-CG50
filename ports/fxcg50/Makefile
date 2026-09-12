@@ -33,6 +33,7 @@ endif
 		../sh/modules/zipfile/__init__.py
 	python3 ../../tests/ports/sh/pygame_compat.py
 	python3 ../../tests/ports/sh/pygame_cg50_regression.py
+	python3 ../../tests/ports/sh/pygame_colorkey.py
 	python3 ../../tests/ports/sh/numpy_compat.py
 	python3 ../../tests/ports/sh/py3d_compat.py
 	python3 ../../tests/ports/sh/pyeditor_regression.py
@@ -52,7 +53,6 @@ ICONS_RELEASE := --icon-uns=icon-uns.png --icon-sel=icon-sel.png
 ICONS_DEV := --icon-uns=icon-uns-dev.png --icon-sel=icon-sel-dev.png
 
 PythonUltra.g3a: $(BUILD)/firmware.bin
-	python3 blacken_icon.py
 	fxgxa --g3a -n PythonUltra $(ICONS_$(BUILDTYPE)) $< -o $@
 
 send: all

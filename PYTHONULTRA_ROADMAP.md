@@ -12,10 +12,15 @@ Reconciled on 2026-09-07 against source, build patches, tests, commit history th
 
 ## September 8–12 hardware feedback and documentation handoff
 
-The handwritten reports identify commit `3f2b5e2a7f00`, a locally described
-"130.1" build, and 446,112 bytes. The matching GitHub commit exists, but the
-separate binary has not been recovered. CI run #130 remains the last verified
-build receipt above/below; do not equate these two binaries.
+The user supplied `PythonUltra-CG50-run130.1.g3a` on 2026-09-12. Its size is
+446,112 bytes, and its embedded ID is `3f2b5e2a7f00`, dated 2026-09-08.
+Header sizes and both checksum forms pass. This is a distinct user-supplied
+build; CI run #130 remains the last verified calculator workflow receipt.
+See [the binary inspection receipt](docs/pythonultra/run130-1-receipt.md).
+The exact embedded icon is preserved in `logo/run130-1-icon.png`.
+Readable strings identify terminal startup and red menu-border RC defaults;
+do not silently revert these while repairing the source. Complete source
+provenance for the modified build remains unresolved.
 
 - [ ] Editor: SHIFT in alpha mode must show and enter uppercase; SHIFT+VARS
   opens Style, F6 opens Symbols (label Sym); cursor repeats stop on release.
@@ -23,9 +28,13 @@ build receipt above/below; do not equate these two binaries.
   output cleanup and standard archive round trips.
 - [ ] Pygame: fix slow/disappearing moving sprites after set_colorkey((0,0,0));
   test clipping and movement, not only a static transparency image.
+  Current priority: native RGB565 keyed drawing replaces the per-pixel Python
+  path, crops source/destination rectangles, and preserves keys on transforms.
+  Native host pixel-oracle tests pass; target build and hardware check pending.
 - [ ] Files Open: wrap long text and make the entire file navigable.
 - [ ] Dark themes: black canvas/dialog backgrounds across all screens.
 - [ ] Icon: lighter dark-gray background and black accents around letters.
+  Use the recovered run130.1 snake/PU emblem as the artwork reference.
 - [ ] Runtime documentation: useful help(function) and function.__doc__,
   including py3d.vec3; ordinary object representations do not satisfy this.
 - [x] Deliver a ZIP containing a plain-text reference for EVERY bundled module,
@@ -61,7 +70,7 @@ interpreter. **Hardware confirmation of these corrections remains open.**
 | Standard ZIP create/extract | Candidate fixed; verify hardware | User reported `ValueError('truncated ZIP')`. The no-op native seek/tell implementation is replaced; tests cover files, nested folders, CRC, failed-output cleanup and preservation of existing destinations. Old malformed archives may need recreating from their originals. |
 | RC-controlled startup | Candidate fixed; verify hardware | The unconditional Files launcher is removed. Missing setting -> Files; `set startup=files` -> Files; `set startup=terminal` -> Terminal. |
 | Catalog insertion into terminal/editor | Active fix | F3 discarded the selection; editor inserted only an unqualified member. Insert e.g. `numpy.array` at the cursor, preserve existing input, cancel without insertion, and never execute automatically. Verify EXE/numbered choices on hardware. |
-| Configurable menu border color | Implemented in correction candidate; verify | `set menu_border=cyan`, `#RRGGBB` or RGB565 `0x07ff` in RC; missing/invalid setting defaults to current cyan. Test reload, Catalog/Files dialogs and editor popup borders. |
+| Configurable menu border color | Implemented; verify hardware | Named color, `#RRGGBB` or RGB565 integer in RC. Preserve the supplied run130.1 red fallback and terminal-startup template; existing RC choices still take precedence, and absent/invalid startup in an existing RC falls back to Files. |
 | File information Modified field | Active fix | User photo shows an implausible integer. Initialize native stat fields, display a valid stored date/time or Unavailable, and complete the clock/timestamp work below. |
 | Filesystem reset regressions | Active fix / verify | World-switch corrections exist (`aa09418`, `c447fca`, `d38dcac`). Retest ls/listdir, mkdir, rename/move, remove/rmdir, stat and ZIP on both revisions. |
 | Numbered deliverables | Implemented | Run #130 uploads `PythonUltra-CG50-run130.g3a` with a checksum and source commit; continue this naming for future runs. |
@@ -74,7 +83,7 @@ interpreter. **Hardware confirmation of these corrections remains open.**
 | Interactive Python REPL | Implemented | `ports/sh/main.c`, `pyexec.c`, `widget_shell.c`; preserved alongside the terminal. |
 | Compact Pygame | Implemented; base build hardware-tested | Frozen `modules/pygame`, `tests/ports/sh/pygame_compat.py` and `pygame_cg50_regression.py`. Surface/Rect, drawing, display, keys/events, fonts, images, transforms, Sprite/Group/GroupSingle and collisions. No sound/network/SDL windows. |
 | Pygame game clock | Implemented | `pygame.time.Clock` includes frame timing. This is not a date/time settings interface or a standalone `time.Clock`. |
-| BMP color-key transparency | Implemented, verify on hardware | `89bac4c`, test `cbf01f2`; do not relist the code fix as unbuilt. |
+| BMP color-key transparency | Active movement/performance correction | Static transparency exists; user reports moving sprites disappear/stutter. Native keyed blit and transform metadata fixes are under validation. |
 | Compact NumPy matrices/vectors | Implemented | Frozen `modules/numpy`, `apply_pythonultra_features.py`, `numpy_compat.py`: transpose/inverse, dot/matmul, cross/norm/normalize/lerp and array helpers. No desktop-NumPy claim. |
 | Native filled triangles | Implemented | `modgint.c::modgint_dtriangle`, `gint.dtriangle(...)`. |
 | py3d first engine | Implemented | `modules/py3d`, `py3d_compat.py`, rotating-cube demo: transforms, projection, back-face culling, painter sorting, simple lighting, native rasterization, wireframe. |

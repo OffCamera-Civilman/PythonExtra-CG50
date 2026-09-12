@@ -187,16 +187,16 @@ _MAN = {
 }
 
 _ALIASES = {}
-DEFAULT_MENU_BORDER = 0x07FF  # Cyan, matching the existing Catalog frame.
+DEFAULT_MENU_BORDER = 0xF800  # Red, matching the supplied run130.1 defaults.
 _SETTINGS = {"font": "normal", "theme": "dark", "startup": "files",
              "menu_border": DEFAULT_MENU_BORDER}
 _STARTED = False
 _RC_TEMPLATE = """# PythonUltra terminal configuration
 # Read at startup. Lines beginning with # are comments.
 set theme=dark
-set startup=files
-# Optional: color name, #RRGGBB, or 0xRGB565. Omitted -> cyan.
-# set menu_border=cyan
+set startup=terminal
+# Optional: color name, #RRGGBB, or 0xRGB565. Omitted -> red.
+set menu_border=red
 set font=normal
 # cd /games
 # alias ll='ls -l'
