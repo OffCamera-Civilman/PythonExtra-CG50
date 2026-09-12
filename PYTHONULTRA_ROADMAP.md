@@ -1,7 +1,7 @@
 # PythonUltra master list
 
 Shared running task list for `OffCamera-Civilman/PythonExtra-CG50`, branch `cg50-new-display`.
-Reconciled on 2026-09-07 against source, build patches, tests, commit history through `7c88b79` (run #129), and user hardware reports. This file is the canonical task list; update it with every feature/fix handoff. Never infer hardware success from a green compiler run or from a Catalog entry alone.
+Reconciled through 2026-09-12 against source, build patches, tests, run #131 at `7f90654337b2`, and user hardware reports. This file is the canonical task list; update it with every feature/fix handoff. Never infer hardware success from a green compiler run or from a Catalog entry alone.
 
 ## Status rules
 
@@ -15,7 +15,7 @@ Reconciled on 2026-09-07 against source, build patches, tests, commit history th
 The user supplied `PythonUltra-CG50-run130.1.g3a` on 2026-09-12. Its size is
 446,112 bytes, and its embedded ID is `3f2b5e2a7f00`, dated 2026-09-08.
 Header sizes and both checksum forms pass. This is a distinct user-supplied
-build; CI run #130 remains the last verified calculator workflow receipt.
+build; the subsequent source-based color-key candidate is CI run #131 below.
 See [the binary inspection receipt](docs/pythonultra/run130-1-receipt.md).
 The exact embedded icon is preserved in `logo/run130-1-icon.png`.
 Readable strings identify terminal startup and red menu-border RC defaults;
@@ -30,7 +30,9 @@ provenance for the modified build remains unresolved.
   test clipping and movement, not only a static transparency image.
   Current priority: native RGB565 keyed drawing replaces the per-pixel Python
   path, crops source/destination rectangles, and preserves keys on transforms.
-  Native host pixel-oracle tests pass; target build and hardware check pending.
+  Native host pixel-oracle tests and calculator build #131 pass. The supplied
+  `colorkey_motion.py` exercises both screen edges and black/nonblack keys.
+  Physical-calculator movement confirmation remains pending.
 - [ ] Files Open: wrap long text and make the entire file navigable.
 - [ ] Dark themes: black canvas/dialog backgrounds across all screens.
 - [ ] Icon: lighter dark-gray background and black accents around letters.
@@ -41,9 +43,9 @@ provenance for the modified build remains unresolved.
   with purpose, examples, exact supported syntax and function/method details.
   Keep the source and generation/check command in this repository. Update the
   references and ZIP whenever a library or public functionality is changed.
-  Delivered 2026-09-12: `PythonUltra-Module-Documentation.zip`, 43 module and
-  submodule text files, 1,282 inventoried member/alias/constant names. Based on
-  the prepared source at `3f2b5e2a7f00` (same runtime source as run #130).
+  Updated for run #131: `PythonUltra-Module-Documentation.zip`, 43 module and
+  submodule text files, 1,283 inventoried member/alias/constant names. Generated
+  from the prepared source at `7f90654337b2`, including native color-key drawing.
   Runtime help/function docstrings remain a separate unchecked item above.
 - [ ] Explain version labels and changes: the source is MicroPython
   1.25.0-preview; 3.4.0 in sys.version is a Python compatibility label.
@@ -52,6 +54,20 @@ PicoC, adjustable date/time and truthful persistent file timestamps remain
 open below. The new reports do not mark those capabilities completed.
 
 ## Current correction release
+
+Candidate **run #131** passed GitHub Actions on 2026-09-12, commit
+`7f90654337b28f6fcba6b7f73fe424aeffd090f6`.
+Download: `PythonUltra-CG50-run131.g3a`, **446,696 bytes**.
+SHA-256: `d3eedbb3cc979f01ce42aaf17290065568a94196888e04cb62aeb617f95cca0c`.
+[Build and artifact](https://github.com/OffCamera-Civilman/PythonExtra-CG50/actions/runs/34697047264).
+This candidate adds a native RGB565 color-key blit, correct source/destination
+clipping, and preserved transparency keys in transforms. All host regressions,
+target compilation/linking, G3A checksums, and documentation coverage checks
+pass. Both icon slots match the supplied run130.1 pixels exactly. Hardware
+movement remains the acceptance gate; other reported defects remain open.
+See [the color-key handoff and test steps](docs/pythonultra/colorkey-run131.md).
+
+Previous correction baseline:
 
 Candidate **run #130** passed GitHub Actions on 2026-09-07, commit
 `c6b74e611d62abd3041f604d835a253230ccb027`.
@@ -73,7 +89,7 @@ interpreter. **Hardware confirmation of these corrections remains open.**
 | Configurable menu border color | Implemented; verify hardware | Named color, `#RRGGBB` or RGB565 integer in RC. Preserve the supplied run130.1 red fallback and terminal-startup template; existing RC choices still take precedence, and absent/invalid startup in an existing RC falls back to Files. |
 | File information Modified field | Active fix | User photo shows an implausible integer. Initialize native stat fields, display a valid stored date/time or Unavailable, and complete the clock/timestamp work below. |
 | Filesystem reset regressions | Active fix / verify | World-switch corrections exist (`aa09418`, `c447fca`, `d38dcac`). Retest ls/listdir, mkdir, rename/move, remove/rmdir, stat and ZIP on both revisions. |
-| Numbered deliverables | Implemented | Run #130 uploads `PythonUltra-CG50-run130.g3a` with a checksum and source commit; continue this naming for future runs. |
+| Numbered deliverables | Implemented | Run #131 uploads `PythonUltra-CG50-run131.g3a` with a checksum, source commit, motion demo and matching module reference; continue this naming for future runs. |
 
 ## Already built — do not schedule from scratch
 
@@ -83,7 +99,7 @@ interpreter. **Hardware confirmation of these corrections remains open.**
 | Interactive Python REPL | Implemented | `ports/sh/main.c`, `pyexec.c`, `widget_shell.c`; preserved alongside the terminal. |
 | Compact Pygame | Implemented; base build hardware-tested | Frozen `modules/pygame`, `tests/ports/sh/pygame_compat.py` and `pygame_cg50_regression.py`. Surface/Rect, drawing, display, keys/events, fonts, images, transforms, Sprite/Group/GroupSingle and collisions. No sound/network/SDL windows. |
 | Pygame game clock | Implemented | `pygame.time.Clock` includes frame timing. This is not a date/time settings interface or a standalone `time.Clock`. |
-| BMP color-key transparency | Active movement/performance correction | Static transparency exists; user reports moving sprites disappear/stutter. Native keyed blit and transform metadata fixes are under validation. |
+| BMP color-key transparency | Candidate fixed; verify hardware | Run #131 replaces per-pixel Python screen drawing with one native call, clips both rectangles, and preserves keys through transforms. Five native/Python regressions pass; test the user's moving BMP sprite and bundled motion demo on hardware. |
 | Compact NumPy matrices/vectors | Implemented | Frozen `modules/numpy`, `apply_pythonultra_features.py`, `numpy_compat.py`: transpose/inverse, dot/matmul, cross/norm/normalize/lerp and array helpers. No desktop-NumPy claim. |
 | Native filled triangles | Implemented | `modgint.c::modgint_dtriangle`, `gint.dtriangle(...)`. |
 | py3d first engine | Implemented | `modules/py3d`, `py3d_compat.py`, rotating-cube demo: transforms, projection, back-face culling, painter sorting, simple lighting, native rasterization, wireframe. |
