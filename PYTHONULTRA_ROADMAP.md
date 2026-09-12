@@ -10,6 +10,38 @@ Reconciled on 2026-09-07 against source, build patches, tests, commit history th
 - **Active fix**: code exists but hardware reports show a defect. A local or CI pass does not close it.
 - **Remaining**: not integrated, or only part of the requested functionality exists.
 
+## September 8–12 hardware feedback and documentation handoff
+
+The handwritten reports identify commit `3f2b5e2a7f00`, a locally described
+"130.1" build, and 446,112 bytes. The matching GitHub commit exists, but the
+separate binary has not been recovered. CI run #130 remains the last verified
+build receipt above/below; do not equate these two binaries.
+
+- [ ] Editor: SHIFT in alpha mode must show and enter uppercase; SHIFT+VARS
+  opens Style, F6 opens Symbols (label Sym); cursor repeats stop on release.
+- [ ] ZIP: reproduce and fix the 42,074-byte compression hang; keep failed
+  output cleanup and standard archive round trips.
+- [ ] Pygame: fix slow/disappearing moving sprites after set_colorkey((0,0,0));
+  test clipping and movement, not only a static transparency image.
+- [ ] Files Open: wrap long text and make the entire file navigable.
+- [ ] Dark themes: black canvas/dialog backgrounds across all screens.
+- [ ] Icon: lighter dark-gray background and black accents around letters.
+- [ ] Runtime documentation: useful help(function) and function.__doc__,
+  including py3d.vec3; ordinary object representations do not satisfy this.
+- [x] Deliver a ZIP containing a plain-text reference for EVERY bundled module,
+  with purpose, examples, exact supported syntax and function/method details.
+  Keep the source and generation/check command in this repository. Update the
+  references and ZIP whenever a library or public functionality is changed.
+  Delivered 2026-09-12: `PythonUltra-Module-Documentation.zip`, 43 module and
+  submodule text files, 1,282 inventoried member/alias/constant names. Based on
+  the prepared source at `3f2b5e2a7f00` (same runtime source as run #130).
+  Runtime help/function docstrings remain a separate unchecked item above.
+- [ ] Explain version labels and changes: the source is MicroPython
+  1.25.0-preview; 3.4.0 in sys.version is a Python compatibility label.
+
+PicoC, adjustable date/time and truthful persistent file timestamps remain
+open below. The new reports do not mark those capabilities completed.
+
 ## Current correction release
 
 Candidate **run #130** passed GitHub Actions on 2026-09-07, commit
