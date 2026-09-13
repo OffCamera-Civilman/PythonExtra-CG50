@@ -120,6 +120,17 @@ def patch_fxcg50_ctype_library():
     path.write_text(text, encoding="utf-8")
 
 
+def patch_fxcg50_include_library():
+    """Do not register the POSIX unistd library on the calculator."""
+    path = DEST / "include.c"
+    text = path.read_text(encoding="utf-8")
+    old = '# ifndef WIN32\n    IncludeRegister(pc, "unistd.h", &UnistdSetupFunc, &UnistdFunctions[0], UnistdDefs);\n# endif\n'
+    new = '# if !defined(WIN32) && !defined(FXCG50)\n    IncludeRegister(pc, "unistd.h", &UnistdSetupFunc, &UnistdFunctions[0], UnistdDefs);\n# endif\n'
+    if old not in text:
+        raise RuntimeError("unexpected PicoC include.c unistd registration")
+    path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+
 def main():
     if ready():
         print("PicoC source already pinned at", COMMIT[:12])
@@ -183,6 +194,7 @@ def main():
     patch_fxcg50_string_library()
     patch_fxcg50_time_library()
     patch_fxcg50_ctype_library()
+    patch_fxcg50_include_library()
 
     MARKER.write_text(COMMIT + "\n", encoding="utf-8")
     print("Prepared PicoC source in", DEST)
