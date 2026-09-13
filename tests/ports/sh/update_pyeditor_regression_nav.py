@@ -1,4 +1,4 @@
-"""Keep editor regression aligned with SHIFT+VARS and PyEditorRC turbo."""
+"""Keep editor regression aligned with SHIFT+VARS, PyEditorRC turbo, and Files handoff."""
 
 from pathlib import Path
 
@@ -86,8 +86,20 @@ elif old_repeat_v154 in text:
 elif new_repeat not in text:
     raise SystemExit("Unable to locate stale key-repeat regression block")
 
+# UI4 intentionally preserves the editor's "run" result only as a terminal
+# handoff signal. Files must not execute the script a second time. The old test
+# rejected the mere presence of result == "run", which now flags the correct
+# handoff implementation as a failure.
+old_handoff = '''# Files must not execute an editor-run script for a second time.\npyfiles_source = PYFILES_PATH.read_text(encoding="utf-8")\nassert 'result == "run"' not in pyfiles_source\n'''
+new_handoff = '''# Files must not execute an editor-run script for a second time. UI4 may\n# observe the editor's "run" result, but only to leave Files and reveal the\n# shared terminal where the editor already sent the script output.\npyfiles_source = PYFILES_PATH.read_text(encoding="utf-8")\nassert 'result = self.pyeditor.open_file(path, self.theme_name)' in pyfiles_source\nassert 'if result == "run":' in pyfiles_source\nassert 'return "terminal"' in pyfiles_source\nassert 'exec(code, scope, scope)' in pyfiles_source\nassert 'if result == "run":\\n                self.run_file(path)' not in pyfiles_source\n'''
+if old_handoff in text:
+    text = text.replace(old_handoff, new_handoff, 1)
+    changed = True
+elif new_handoff not in text:
+    raise SystemExit("Unable to locate Files editor-run regression expectation")
+
 if changed:
     TEST.write_text(text, encoding="utf-8")
-    print("Updated pyeditor regression for SHIFT VARS and PyEditorRC turbo")
+    print("Updated pyeditor regression for SHIFT VARS, PyEditorRC turbo, and terminal handoff")
 else:
-    print("pyeditor regression already aligned with SHIFT VARS and PyEditorRC turbo")
+    print("pyeditor regression already aligned with SHIFT VARS, PyEditorRC turbo, and terminal handoff")
