@@ -23,6 +23,7 @@ ifneq ($(PYTHONULTRA_RUNTIME_PREPARED),1)
 	python3 ../sh/apply_pythonultra_permissions.py
 	python3 ../sh/apply_pythonultra_ui3_compat.py
 	python3 ../sh/apply_pythonultra_symbols.py
+	python3 ../sh/apply_pythonultra_symbol_safety.py
 	python3 ../sh/apply_pythonultra_editor_nav.py
 	python3 ../../tools/pythonultra_docs.py --output ../../build-module-docs/reference --runtime-header ../sh/module_docs.h
 endif
@@ -40,6 +41,7 @@ endif
 	python3 ../../tests/ports/sh/py3d_compat.py
 	python3 ../../tests/ports/sh/pyeditor_regression.py
 	python3 ../../tests/ports/sh/pyeditor_navigation.py
+	python3 ../../tests/ports/sh/editor_symbol_safety.py
 	python3 ../../tests/ports/sh/zipfile_roundtrip.py
 	python3 ../../tests/ports/sh/pyterm_startup.py
 	python3 ../../tests/ports/sh/fdfile_seek.py
