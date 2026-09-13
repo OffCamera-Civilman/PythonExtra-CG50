@@ -52,6 +52,24 @@ new_repeat = '''    # PyEditorRC turbo: the physical DOWN is returned immediatel
     assert reader.read(fast_repeat=True) == g.KEY_RIGHT
     assert reader.read(fast_repeat=True) == g.KEY_RIGHT
     assert reader.is_scrolling
+    # Releasing a scrolling key deliberately yields one None so the editor can
+    # redraw in full-quality mode; the next genuine key-down remains queued.
+    g.down.discard(g.KEY_RIGHT)
+    g.events[:] = [Event(g.KEYEV_UP, g.KEY_RIGHT), Event(g.KEYEV_DOWN, g.KEY_XOT)]
+    assert reader.read(fast_repeat=True) is None
+    assert reader.read(fast_repeat=True) == g.KEY_XOT
+    assert not reader.is_scrolling
+'''
+old_repeat_v154 = '''    # PyEditorRC turbo: the physical DOWN is returned immediately, then a
+    # continuously-held navigation key begins repeating after the original
+    # 20-poll threshold and switches the reader into scrolling mode.
+    g = fake_gint
+    reader = editor_module._KeyReader(g)
+    g.down.add(g.KEY_RIGHT)
+    g.events[:] = [Event(g.KEYEV_DOWN, g.KEY_RIGHT)]
+    assert reader.read(fast_repeat=True) == g.KEY_RIGHT
+    assert reader.read(fast_repeat=True) == g.KEY_RIGHT
+    assert reader.is_scrolling
     # Releasing the navigation key stops turbo while preserving the next
     # genuine key-down event in exact order.
     g.down.discard(g.KEY_RIGHT)
@@ -61,6 +79,9 @@ new_repeat = '''    # PyEditorRC turbo: the physical DOWN is returned immediatel
 '''
 if old_repeat in text:
     text = text.replace(old_repeat, new_repeat, 1)
+    changed = True
+elif old_repeat_v154 in text:
+    text = text.replace(old_repeat_v154, new_repeat, 1)
     changed = True
 elif new_repeat not in text:
     raise SystemExit("Unable to locate stale key-repeat regression block")
