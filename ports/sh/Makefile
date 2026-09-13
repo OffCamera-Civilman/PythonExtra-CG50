@@ -37,8 +37,7 @@ PICOC_SRC := \
     $(PICOC_DIR)/cstdlib/time.c \
     $(PICOC_DIR)/cstdlib/errno.c \
     $(PICOC_DIR)/cstdlib/ctype.c \
-    $(PICOC_DIR)/cstdlib/stdbool.c \
-    $(PICOC_DIR)/cstdlib/unistd.c
+    $(PICOC_DIR)/cstdlib/stdbool.c
 
 PICOC_OBJ := $(addprefix $(BUILD)/,$(PICOC_SRC:.c=.o))
 $(PICOC_OBJ) $(BUILD)/ports/sh/modpicoc.o $(BUILD)/ports/sh/picoc_platform_fxcg50.o: \
