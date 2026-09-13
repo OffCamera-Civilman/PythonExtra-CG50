@@ -98,11 +98,25 @@ def patch_fxcg50_time_library():
     """Exclude POSIX-only time helpers unavailable in the fx-CG50 libc."""
     path = DEST / "cstdlib" / "time.c"
     text = path.read_text(encoding="utf-8")
-    # The calculator libc supplies the ISO-C time surface used above, but not
-    # strptime(), gmtime_r(), or timegm(). Keep them for desktop hosts and omit
-    # them from both implementation and PicoC registration on FXCG50.
     text = text.replace("#ifndef WIN32\nvoid StdStrptime", "#if !defined(WIN32) && !defined(FXCG50)\nvoid StdStrptime", 1)
     text = text.replace("#ifndef WIN32\n    {StdStrptime", "#if !defined(WIN32) && !defined(FXCG50)\n    {StdStrptime", 1)
+    path.write_text(text, encoding="utf-8")
+
+
+def patch_fxcg50_ctype_library():
+    """Replace non-standard ASCII helpers with tiny portable equivalents."""
+    path = DEST / "cstdlib" / "ctype.c"
+    text = path.read_text(encoding="utf-8")
+    text = text.replace(
+        "ReturnValue->Val->Integer = isascii(Param[0]->Val->Integer);",
+        "ReturnValue->Val->Integer = ((unsigned int)Param[0]->Val->Integer <= 0x7fU);",
+        1,
+    )
+    text = text.replace(
+        "ReturnValue->Val->Integer = toascii(Param[0]->Val->Integer);",
+        "ReturnValue->Val->Integer = Param[0]->Val->Integer & 0x7f;",
+        1,
+    )
     path.write_text(text, encoding="utf-8")
 
 
@@ -168,6 +182,7 @@ def main():
 
     patch_fxcg50_string_library()
     patch_fxcg50_time_library()
+    patch_fxcg50_ctype_library()
 
     MARKER.write_text(COMMIT + "\n", encoding="utf-8")
     print("Prepared PicoC source in", DEST)
