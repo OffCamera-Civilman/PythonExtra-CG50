@@ -25,6 +25,7 @@ ifneq ($(PYTHONULTRA_RUNTIME_PREPARED),1)
 	python3 ../sh/apply_pythonultra_symbols.py
 	python3 ../sh/apply_pythonultra_symbol_safety.py
 	python3 ../sh/apply_pythonultra_editor_nav.py
+	python3 ../sh/apply_pythonultra_editor_nav_docs.py
 	python3 ../../tools/pythonultra_docs.py --output ../../build-module-docs/reference --runtime-header ../sh/module_docs.h
 endif
 	python3 -m py_compile \
