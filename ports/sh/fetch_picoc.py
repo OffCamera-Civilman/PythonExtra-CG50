@@ -33,6 +33,71 @@ def ready():
     return all((DEST / name).exists() for name in REQUIRED)
 
 
+def patch_fxcg50_string_library():
+    """Replace POSIX-only string helpers with portable ISO-C equivalents."""
+    path = DEST / "cstdlib" / "string.c"
+    text = path.read_text(encoding="utf-8")
+
+    # index()/rindex() are historical BSD names. PicoC exposes those C names,
+    # but the implementation can use the ISO-C strchr()/strrchr() functions.
+    text = text.replace("= index(Param[0]->Val->Pointer,", "= strchr(Param[0]->Val->Pointer,", 1)
+    text = text.replace("= rindex(Param[0]->Val->Pointer,", "= strrchr(Param[0]->Val->Pointer,", 1)
+
+    # The fx-CG50 libc doesn't provide POSIX strdup()/strtok_r(). Keep PicoC's
+    # public functions intact with compact target-local implementations.
+    marker = 'static int String_ZeroValue = 0;\n'
+    helpers = r'''static int String_ZeroValue = 0;
+
+#ifdef FXCG50
+static char *PythonUltraStrdup(const char *Source)
+{
+    size_t Length = strlen(Source) + 1;
+    char *Copy = malloc(Length);
+    if (Copy != NULL)
+        memcpy(Copy, Source, Length);
+    return Copy;
+}
+
+static char *PythonUltraStrtokR(char *String, const char *Delimiters,
+    char **SavePtr)
+{
+    char *Cursor = String != NULL ? String : *SavePtr;
+    char *Start;
+
+    if (Cursor == NULL)
+        return NULL;
+
+    while (*Cursor != '\0' && strchr(Delimiters, *Cursor) != NULL)
+        Cursor++;
+    if (*Cursor == '\0') {
+        *SavePtr = NULL;
+        return NULL;
+    }
+
+    Start = Cursor;
+    while (*Cursor != '\0' && strchr(Delimiters, *Cursor) == NULL)
+        Cursor++;
+    if (*Cursor != '\0') {
+        *Cursor++ = '\0';
+        *SavePtr = Cursor;
+    }
+    else
+        *SavePtr = NULL;
+
+    return Start;
+}
+#endif
+'''
+    if marker not in text:
+        raise RuntimeError("unexpected PicoC string.c zero-value marker")
+    text = text.replace(marker, helpers, 1)
+    text = text.replace("(void*)strdup(Param[0]->Val->Pointer)",
+                        "(void*)PythonUltraStrdup(Param[0]->Val->Pointer)", 1)
+    text = text.replace("(void*)strtok_r(Param[0]->Val->Pointer,",
+                        "(void*)PythonUltraStrtokR(Param[0]->Val->Pointer,", 1)
+    path.write_text(text, encoding="utf-8")
+
+
 def main():
     if ready():
         print("PicoC source already pinned at", COMMIT[:12])
@@ -100,6 +165,8 @@ def main():
     # fallback input path and avoid a readline dependency.
     text = text.replace("#define USE_READLINE\n", "/* PythonUltra: readline disabled */\n", 1)
     platform_h.write_text(text, encoding="utf-8")
+
+    patch_fxcg50_string_library()
 
     MARKER.write_text(COMMIT + "\n", encoding="utf-8")
     print("Prepared PicoC source in", DEST)
