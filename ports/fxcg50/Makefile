@@ -26,6 +26,7 @@ ifneq ($(PYTHONULTRA_RUNTIME_PREPARED),1)
 	python3 ../sh/apply_pythonultra_symbol_safety.py
 	python3 ../sh/apply_pythonultra_editor_nav.py
 	python3 ../sh/apply_pythonultra_editor_nav_docs.py
+	python3 ../sh/apply_pythonultra_ui4.py
 	python3 ../../tools/pythonultra_docs.py --output ../../build-module-docs/reference --runtime-header ../sh/module_docs.h
 endif
 	python3 -m py_compile \
@@ -43,6 +44,7 @@ endif
 	python3 ../../tests/ports/sh/update_pyeditor_regression_nav.py
 	python3 ../../tests/ports/sh/pyeditor_regression.py
 	python3 ../../tests/ports/sh/pyeditor_navigation.py
+	python3 ../../tests/ports/sh/ui4_regression.py
 	python3 ../../tests/ports/sh/editor_symbol_safety.py
 	python3 ../../tests/ports/sh/zipfile_roundtrip.py
 	python3 ../../tests/ports/sh/pyterm_startup.py
