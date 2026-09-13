@@ -1,7 +1,7 @@
 """Fetch the pinned PicoC source used by PythonUltra builds.
 
 The vendor tree is generated during the build instead of committing a large
-third-party source copy.  PicoC is BSD-3-Clause licensed; the upstream LICENSE
+third-party source copy. PicoC is BSD-3-Clause licensed; the upstream LICENSE
 is retained inside the generated vendor directory.
 """
 
@@ -66,12 +66,39 @@ def main():
     if missing:
         raise RuntimeError("PicoC archive missing: " + ", ".join(missing))
 
-    # The original UNIX build enables GNU readline unconditionally.  The fx-CG50
-    # integration provides its own terminal/editor path, so keep PicoC's compact
-    # fallback input path and avoid a readline dependency.
+    # Teach upstream PicoC about PythonUltra's fx-CG50 target. This must live in
+    # platform.h rather than only a target-specific object CFLAGS rule because
+    # MicroPython's QSTR preprocessing includes modpicoc.c using the global
+    # port flags. FXCG50 is already defined globally by the SH port.
     platform_h = DEST / "platform.h"
     text = platform_h.read_text(encoding="utf-8")
-    text = text.replace("#define USE_READLINE\n", "/* PythonUltra: readline disabled */\n")
+    old = """#ifdef UNIX_HOST
+# include <stdint.h>
+# include <unistd.h>
+#elif defined(WIN32) /*(predefined on MSVC)*/
+#else
+# error ***** A platform must be explicitly defined! *****
+#endif
+"""
+    new = """#ifdef UNIX_HOST
+# include <stdint.h>
+# include <unistd.h>
+#elif defined(FXCG50)
+/* PythonUltra/fx-CG50: freestanding SH target, no POSIX/readline dependency. */
+# include <stdint.h>
+#elif defined(WIN32) /*(predefined on MSVC)*/
+#else
+# error ***** A platform must be explicitly defined! *****
+#endif
+"""
+    if old not in text:
+        raise RuntimeError("unexpected PicoC platform.h host-selection block")
+    text = text.replace(old, new, 1)
+
+    # The original UNIX build enables GNU readline unconditionally. The fx-CG50
+    # integration provides its own terminal/editor path, so keep PicoC's compact
+    # fallback input path and avoid a readline dependency.
+    text = text.replace("#define USE_READLINE\n", "/* PythonUltra: readline disabled */\n", 1)
     platform_h.write_text(text, encoding="utf-8")
 
     MARKER.write_text(COMMIT + "\n", encoding="utf-8")
