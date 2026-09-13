@@ -38,13 +38,9 @@ def patch_fxcg50_string_library():
     path = DEST / "cstdlib" / "string.c"
     text = path.read_text(encoding="utf-8")
 
-    # index()/rindex() are historical BSD names. PicoC exposes those C names,
-    # but the implementation can use the ISO-C strchr()/strrchr() functions.
     text = text.replace("= index(Param[0]->Val->Pointer,", "= strchr(Param[0]->Val->Pointer,", 1)
     text = text.replace("= rindex(Param[0]->Val->Pointer,", "= strrchr(Param[0]->Val->Pointer,", 1)
 
-    # The fx-CG50 libc doesn't provide POSIX strdup()/strtok_r(). Keep PicoC's
-    # public functions intact with compact target-local implementations.
     marker = 'static int String_ZeroValue = 0;\n'
     helpers = r'''static int String_ZeroValue = 0;
 
@@ -98,6 +94,18 @@ static char *PythonUltraStrtokR(char *String, const char *Delimiters,
     path.write_text(text, encoding="utf-8")
 
 
+def patch_fxcg50_time_library():
+    """Exclude POSIX-only time helpers unavailable in the fx-CG50 libc."""
+    path = DEST / "cstdlib" / "time.c"
+    text = path.read_text(encoding="utf-8")
+    # The calculator libc supplies the ISO-C time surface used above, but not
+    # strptime(), gmtime_r(), or timegm(). Keep them for desktop hosts and omit
+    # them from both implementation and PicoC registration on FXCG50.
+    text = text.replace("#ifndef WIN32\nvoid StdStrptime", "#if !defined(WIN32) && !defined(FXCG50)\nvoid StdStrptime", 1)
+    text = text.replace("#ifndef WIN32\n    {StdStrptime", "#if !defined(WIN32) && !defined(FXCG50)\n    {StdStrptime", 1)
+    path.write_text(text, encoding="utf-8")
+
+
 def main():
     if ready():
         print("PicoC source already pinned at", COMMIT[:12])
@@ -131,10 +139,6 @@ def main():
     if missing:
         raise RuntimeError("PicoC archive missing: " + ", ".join(missing))
 
-    # Teach upstream PicoC about PythonUltra's fx-CG50 target. This must live in
-    # platform.h rather than only a target-specific object CFLAGS rule because
-    # MicroPython's QSTR preprocessing includes modpicoc.c using the global
-    # port flags. FXCG50 is already defined globally by the SH port.
     platform_h = DEST / "platform.h"
     text = platform_h.read_text(encoding="utf-8")
     old = """#ifdef UNIX_HOST
@@ -159,14 +163,11 @@ def main():
     if old not in text:
         raise RuntimeError("unexpected PicoC platform.h host-selection block")
     text = text.replace(old, new, 1)
-
-    # The original UNIX build enables GNU readline unconditionally. The fx-CG50
-    # integration provides its own terminal/editor path, so keep PicoC's compact
-    # fallback input path and avoid a readline dependency.
     text = text.replace("#define USE_READLINE\n", "/* PythonUltra: readline disabled */\n", 1)
     platform_h.write_text(text, encoding="utf-8")
 
     patch_fxcg50_string_library()
+    patch_fxcg50_time_library()
 
     MARKER.write_text(COMMIT + "\n", encoding="utf-8")
     print("Prepared PicoC source in", DEST)
