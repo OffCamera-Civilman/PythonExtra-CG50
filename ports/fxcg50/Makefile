@@ -40,6 +40,7 @@ endif
 	python3 ../../tests/ports/sh/pygame_colorkey.py
 	python3 ../../tests/ports/sh/numpy_compat.py
 	python3 ../../tests/ports/sh/py3d_compat.py
+	python3 ../../tests/ports/sh/update_pyeditor_regression_nav.py
 	python3 ../../tests/ports/sh/pyeditor_regression.py
 	python3 ../../tests/ports/sh/pyeditor_navigation.py
 	python3 ../../tests/ports/sh/editor_symbol_safety.py
