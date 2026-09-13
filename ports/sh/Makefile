@@ -18,7 +18,6 @@ LIBS += -nostdlib -Wl,--no-warn-rwx-segments $(SH_LDFLAGS) -Wl,-Map=build/map
 LDFLAGS := -Wno-lto-type-mismatch
 
 PICOC_DIR := ports/sh/vendor/picoc
-PICOC_STAMP := $(PICOC_DIR)/.pythonultra_picoc_commit
 PICOC_SRC := \
     $(PICOC_DIR)/table.c \
     $(PICOC_DIR)/lex.c \
@@ -40,11 +39,6 @@ PICOC_SRC := \
     $(PICOC_DIR)/cstdlib/ctype.c \
     $(PICOC_DIR)/cstdlib/stdbool.c \
     $(PICOC_DIR)/cstdlib/unistd.c
-
-$(PICOC_STAMP): ports/sh/fetch_picoc.py
-	python3 ports/sh/fetch_picoc.py
-
-$(PICOC_SRC): $(PICOC_STAMP)
 
 PICOC_OBJ := $(addprefix $(BUILD)/,$(PICOC_SRC:.c=.o))
 $(PICOC_OBJ) $(BUILD)/ports/sh/modpicoc.o $(BUILD)/ports/sh/picoc_platform_fxcg50.o: \
