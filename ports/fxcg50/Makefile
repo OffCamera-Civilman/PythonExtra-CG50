@@ -28,6 +28,7 @@ ifneq ($(PYTHONULTRA_RUNTIME_PREPARED),1)
 	python3 ../sh/apply_pythonultra_editor_nav.py
 	python3 ../sh/apply_pythonultra_editor_nav_docs.py
 	python3 ../sh/apply_pythonultra_ui4.py
+	python3 ../sh/apply_pythonultra_info_menu.py
 	python3 ../../tools/pythonultra_docs.py --output ../../build-module-docs/reference --runtime-header ../sh/module_docs.h
 endif
 	python3 -m py_compile \
@@ -60,7 +61,7 @@ $(BUILD)/firmware.bin: pythonultra-runtime-fixes
 all: PythonUltra.g3a
 
 ICONS_RELEASE := --icon-uns=icon-uns.png --icon-sel=icon-sel.png
-ICONS_DEV := --icon-uns=icon-uns-dev.png --icon-sel=icon-sel-dev.png
+ICONS_DEV := --icon-uns=icon-uns-dev.png --icon-sel=icon-sel.png
 
 PythonUltra.g3a: $(BUILD)/firmware.bin
 	fxgxa --g3a -n PythonUltra $(ICONS_$(BUILDTYPE)) $< -o $@
