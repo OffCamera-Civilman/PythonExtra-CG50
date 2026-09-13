@@ -11,18 +11,17 @@ files = FILES.read_text(encoding="utf-8")
 
 editor_required = (
     "PYTHONULTRA_UI4_VERSION = 1",
-    "TURBO_DELAY_MS = 120",
-    "TURBO_INTERVAL_MS = 18",
-    "TURBO_STAGE2_MS = 420",
-    "TURBO_STAGE3_MS = 900",
-    "time.ticks_ms()",
-    "time.ticks_diff(newer, older)",
-    "def repeat_step(self):",
-    "return 6",
-    "return 3",
+    "self.last_k = None",
+    "self.rep_cnt = 0",
+    "self.is_scrolling = False",
+    "threshold = 6 if self.is_scrolling else 20",
+    "self.rep_cnt = 5",
+    "self.is_scrolling = True",
     "self.turbo_mode = True",
     '"Turbo: ON" if self.turbo_mode else "Turbo: OFF"',
-    "nav_step = self._keys.repeat_step() if self.turbo_mode else 1",
+    "def draw_line_turbo(self, text, y):",
+    "self.turbo_mode and self._keys.is_scrolling",
+    "self._keys.read(fast_repeat=self.turbo_mode)",
 )
 files_required = (
     "PYTHONULTRA_UI4_VERSION = 1",
@@ -40,7 +39,6 @@ missing = [item for item in files_required if item not in files]
 if missing:
     raise SystemExit("UI4 files regression missing: " + repr(missing))
 
-# Viewer must no longer hard-clip each logical line at 48 characters.
 if "lines[idx][:48]" in files:
     raise SystemExit("UI4 viewer regression: hard clipping remains")
 
