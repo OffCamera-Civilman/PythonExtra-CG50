@@ -1,4 +1,4 @@
-"""PythonUltra UI4: wrapped file viewer, terminal handoff, and turbo editor navigation."""
+"""PythonUltra UI4: wrapped file viewer, terminal handoff, and PyEditorRC-style turbo navigation."""
 
 from pathlib import Path
 
@@ -16,88 +16,77 @@ def replace_once(text, old, new, label):
     return text.replace(old, new, 1)
 
 
+def replace_method(text, name, next_name, body):
+    start_token = "    def " + name + "(self):\n"
+    next_token = "    def " + next_name + "(self"
+    start = text.find(start_token)
+    if start < 0:
+        raise SystemExit("UI4 patch could not locate method " + name)
+    end = text.find(next_token, start + len(start_token))
+    if end < 0:
+        raise SystemExit("UI4 patch could not locate method after " + name)
+    return text[:start] + body + "\n" + text[end:]
+
+
 def patch_editor():
     text = EDITOR.read_text(encoding="utf-8")
     if MARKER in text:
         print("PythonUltra UI4 editor already applied")
         return
 
+    # Port the proven PyEditorRC repeat model: an initial held-key delay, then
+    # a short repeat threshold while scrolling. The is_scrolling flag is also
+    # used by draw() to temporarily skip expensive syntax highlighting.
     start = text.index("class _KeyReader:")
     end = text.index("\ndef _maps(g):", start)
     reader = '''class _KeyReader:
-    """Event reader with RC-style automatic turbo acceleration for navigation."""
-    TURBO_DELAY_MS = 120
-    TURBO_INTERVAL_MS = 18
-    TURBO_STAGE2_MS = 420
-    TURBO_STAGE3_MS = 900
-
+    """Physical key reader with the proven PyEditorRC turbo repeat model."""
     def __init__(self, g):
         self.g = g
         self.pending = []
         self.repeat_keys = (g.KEY_UP, g.KEY_DOWN, g.KEY_LEFT, g.KEY_RIGHT, g.KEY_DEL)
-        self.held_key = None
-        self.held_since = 0
-        self.last_repeat = 0
-
-    def _ticks(self):
-        return time.ticks_ms()
-
-    def _diff(self, newer, older):
-        return time.ticks_diff(newer, older)
-
-    def repeat_step(self):
-        if self.held_key is None:
-            return 1
-        age = self._diff(self._ticks(), self.held_since)
-        if age >= self.TURBO_STAGE3_MS:
-            return 6
-        if age >= self.TURBO_STAGE2_MS:
-            return 3
-        return 1
+        self.last_k = None
+        self.rep_cnt = 0
+        self.is_scrolling = False
 
     def read(self, fast_repeat=False):
         g = self.g
         while True:
-            hold_event = None
-            now = self._ticks()
             while True:
                 ev = g.pollevent()
                 if ev.type == g.KEYEV_NONE:
                     break
                 if ev.type == g.KEYEV_DOWN:
                     self.pending.append(ev.key)
-                    if ev.key in self.repeat_keys:
-                        self.held_key = ev.key
-                        self.held_since = now
-                        self.last_repeat = now
-                elif ev.type == g.KEYEV_HOLD and ev.key in self.repeat_keys:
-                    hold_event = ev.key
-                    if self.held_key != ev.key:
-                        self.held_key = ev.key
-                        self.held_since = now
-                        self.last_repeat = now
-                elif ev.type == g.KEYEV_UP and ev.key == self.held_key:
-                    self.held_key = None
-                    self.held_since = 0
-                    self.last_repeat = 0
+                    self.last_k = ev.key
+                    self.rep_cnt = 0
+                    self.is_scrolling = False
+                elif ev.type == g.KEYEV_UP and ev.key == self.last_k:
+                    was_scrolling = self.is_scrolling
+                    self.last_k = None
+                    self.rep_cnt = 0
+                    self.is_scrolling = False
+                    if was_scrolling and fast_repeat and not self.pending:
+                        return None
             if self.pending:
                 return self.pending.pop(0)
 
-            held = self.held_key
-            if held is not None and not g.keydown(held):
-                self.held_key = None
-                held = None
-
-            if fast_repeat and held is not None:
-                now = self._ticks()
-                if (self._diff(now, self.held_since) >= self.TURBO_DELAY_MS
-                        and self._diff(now, self.last_repeat) >= self.TURBO_INTERVAL_MS):
-                    self.last_repeat = now
-                    return held
-            elif hold_event is not None and g.keydown(hold_event):
-                return hold_event
-
-            time.sleep_ms(2 if fast_repeat else 10)
+            if fast_repeat and self.last_k in self.repeat_keys:
+                if g.keydown(self.last_k):
+                    self.rep_cnt += 1
+                    threshold = 6 if self.is_scrolling else 20
+                    if self.rep_cnt > threshold:
+                        self.rep_cnt = 5
+                        self.is_scrolling = True
+                        return self.last_k
+                else:
+                    was_scrolling = self.is_scrolling
+                    self.last_k = None
+                    self.rep_cnt = 0
+                    self.is_scrolling = False
+                    if was_scrolling:
+                        return None
+            time.sleep(0.01)
 '''
     text = text[:start] + reader + text[end:]
 
@@ -111,20 +100,8 @@ def patch_editor():
         "        self.shift_active = False\n        self.turbo_mode = True\n        self.clipboard = \"\"\n",
         "turbo state")
 
-    old_vars = '''    def vars_menu(self):
-        action = self.popup("SHIFT VARS", (
-            "Editor Style", "Jump to Top", "Jump to Bottom",
-            "Jump to Line #", "Cancel"))
-        if action == "Editor Style":
-            self.style_menu()
-        elif action == "Jump to Top":
-            self.jump_top()
-        elif action == "Jump to Bottom":
-            self.jump_bottom()
-        elif action == "Jump to Line #":
-            self.jump_line()
-'''
-    new_vars = '''    def vars_menu(self):
+    vars_body = '''    def vars_menu(self):
+        """Open SHIFT+VARS with editor style, RC turbo, and jump commands."""
         turbo_label = "Turbo: ON" if self.turbo_mode else "Turbo: OFF"
         action = self.popup("SHIFT VARS", (
             "Editor Style", turbo_label, "Jump to Top", "Jump to Bottom",
@@ -133,6 +110,8 @@ def patch_editor():
             self.style_menu()
         elif action == turbo_label:
             self.turbo_mode = not self.turbo_mode
+            self._keys.is_scrolling = False
+            self._keys.rep_cnt = 0
             self.msg = "Turbo ON" if self.turbo_mode else "Turbo OFF"
         elif action == "Jump to Top":
             self.jump_top()
@@ -141,31 +120,39 @@ def patch_editor():
         elif action == "Jump to Line #":
             self.jump_line()
 '''
-    text = replace_once(text, old_vars, new_vars, "SHIFT VARS turbo")
+    text = replace_method(text, "vars_menu", "catalog_menu", vars_body)
 
-    old_move = '''                if key == g.KEY_UP:
-                    self.move(-1, 0)
-                elif key == g.KEY_DOWN:
-                    self.move(1, 0)
-                elif key == g.KEY_LEFT:
-                    self.move(0, -1)
-                elif key == g.KEY_RIGHT:
-                    self.move(0, 1)
+    turbo_draw = '''    def draw_line_turbo(self, text, y):
+        """Fast plain-text renderer used only while a navigation key is held."""
+        if self.scroll_x >= len(text):
+            return
+        visible = text[self.scroll_x:self.scroll_x + MAX_COLS + 2]
+        if visible:
+            self.g.dtext(TEXT_X, y, self.palette[FG], visible)
+
 '''
-    new_move = '''                nav_step = self._keys.repeat_step() if self.turbo_mode else 1
-                if key == g.KEY_UP:
-                    self.move(-nav_step, 0)
-                elif key == g.KEY_DOWN:
-                    self.move(nav_step, 0)
-                elif key == g.KEY_LEFT:
-                    self.move(0, -nav_step)
-                elif key == g.KEY_RIGHT:
-                    self.move(0, nav_step)
+    if "    def draw_line_turbo(self, text, y):\n" not in text:
+        anchor = "    def _ensure_visible(self):\n"
+        if anchor not in text:
+            raise SystemExit("UI4 patch could not locate editor visibility method")
+        text = text.replace(anchor, turbo_draw + anchor, 1)
+
+    old_draw = '''            self.draw_line(self.lines[index], row * FONT_H, index)
 '''
-    text = replace_once(text, old_move, new_move, "turbo movement")
+    new_draw = '''            if self.turbo_mode and self._keys.is_scrolling:
+                self.draw_line_turbo(self.lines[index], row * FONT_H)
+            else:
+                self.draw_line(self.lines[index], row * FONT_H, index)
+'''
+    text = replace_once(text, old_draw, new_draw, "turbo draw path")
+
+    text = replace_once(text,
+        "                key = self._keys.read(fast_repeat=True)\n",
+        "                key = self._keys.read(fast_repeat=self.turbo_mode)\n                if key is None:\n                    continue\n",
+        "editor turbo read")
 
     EDITOR.write_text(text, encoding="utf-8")
-    print("PythonUltra UI4 editor: turbo navigation applied")
+    print("PythonUltra UI4 editor: PyEditorRC turbo navigation applied")
 
 
 def patch_files():
@@ -216,78 +203,36 @@ def patch_files():
         "viewer clipping")
 
     text = replace_once(text,
-        '''            elif key == g.KEY_F2:
-                self.edit_file(path); return
-''',
-        '''            elif key == g.KEY_F2:
-                return self.edit_file(path)
-''',
+        '''            elif key == g.KEY_F2:\n                self.edit_file(path); return\n''',
+        '''            elif key == g.KEY_F2:\n                return self.edit_file(path)\n''',
         "file-info edit return")
     text = replace_once(text,
-        '''            elif key == g.KEY_F4:
-                if lower.endswith(".py"): self.run_file(path); return
-''',
-        '''            elif key == g.KEY_F4:
-                if lower.endswith(".py"): return self.run_file(path)
-''',
+        '''            elif key == g.KEY_F4:\n                if lower.endswith(".py"): self.run_file(path); return\n''',
+        '''            elif key == g.KEY_F4:\n                if lower.endswith(".py"): return self.run_file(path)\n''',
         "file-info run return")
     text = replace_once(text,
-        '''        self.file_info(path)
-
-    def run_file(self, path=None):
-''',
-        '''        return self.file_info(path)
-
-    def run_file(self, path=None):
-''',
+        '''        self.file_info(path)\n\n    def run_file(self, path=None):\n''',
+        '''        return self.file_info(path)\n\n    def run_file(self, path=None):\n''',
         "enter selected return")
     text = replace_once(text,
-        '''            exec(code, scope, scope); self.msg = "Run OK"
-''',
-        '''            exec(code, scope, scope); self.msg = "Run OK"
-            return "terminal"
-''',
+        '''            exec(code, scope, scope); self.msg = "Run OK"\n''',
+        '''            exec(code, scope, scope); self.msg = "Run OK"\n            return "terminal"\n''',
         "run file terminal return")
     text = replace_once(text,
-        '''            self.pyeditor.open_file(path, self.theme_name)
-            self.refresh()
-''',
-        '''            result = self.pyeditor.open_file(path, self.theme_name)
-            self.refresh()
-            if result == "run":
-                return "terminal"
-''',
+        '''            self.pyeditor.open_file(path, self.theme_name)\n            self.refresh()\n''',
+        '''            result = self.pyeditor.open_file(path, self.theme_name)\n            self.refresh()\n            if result == "run":\n                return "terminal"\n''',
         "editor run terminal return")
     text = replace_once(text,
-        '''        elif choice == "Run file": self.run_file()
-        elif choice == "Edit file": self.edit_file()
-''',
-        '''        elif choice == "Run file":
-            if self.run_file() == "terminal": return "terminal"
-        elif choice == "Edit file":
-            if self.edit_file() == "terminal": return "terminal"
-''',
+        '''        elif choice == "Run file": self.run_file()\n        elif choice == "Edit file": self.edit_file()\n''',
+        '''        elif choice == "Run file":\n            if self.run_file() == "terminal": return "terminal"\n        elif choice == "Edit file":\n            if self.edit_file() == "terminal": return "terminal"\n''',
         "more menu terminal return")
     text = replace_once(text,
-        '''            elif key in (g.KEY_EXE, g.KEY_RIGHT): self.enter_selected()
-''',
-        '''            elif key in (g.KEY_EXE, g.KEY_RIGHT):
-                if self.enter_selected() == "terminal": return "terminal"
-''',
+        '''            elif key in (g.KEY_EXE, g.KEY_RIGHT): self.enter_selected()\n''',
+        '''            elif key in (g.KEY_EXE, g.KEY_RIGHT):\n                if self.enter_selected() == "terminal": return "terminal"\n''',
         "browser enter terminal return")
     text = replace_once(text,
-        '''            elif key == g.KEY_F6:
-                if self.more_menu() == "exit": return
-            elif key == g.KEY_OPTN:
-                if self.more_menu() == "exit": return
-''',
-        '''            elif key == g.KEY_F6:
-                action = self.more_menu()
-                if action in ("exit", "terminal"): return action
-            elif key == g.KEY_OPTN:
-                action = self.more_menu()
-                if action in ("exit", "terminal"): return action
-''',
+        '''            elif key == g.KEY_F6:\n                if self.more_menu() == "exit": return\n            elif key == g.KEY_OPTN:\n                if self.more_menu() == "exit": return\n''',
+        '''            elif key == g.KEY_F6:\n                action = self.more_menu()\n                if action in ("exit", "terminal"): return action\n            elif key == g.KEY_OPTN:\n                action = self.more_menu()\n                if action in ("exit", "terminal"): return action\n''',
         "browser menu terminal return")
 
     FILES.write_text(text, encoding="utf-8")
