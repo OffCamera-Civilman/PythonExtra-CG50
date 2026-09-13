@@ -17,6 +17,7 @@ $(JETBRAINS_FONTS) &: prepare_jetbrains_mono.py JetBrainsMono-OFL.txt
 .PHONY: pythonultra-runtime-fixes
 pythonultra-runtime-fixes:
 ifneq ($(PYTHONULTRA_RUNTIME_PREPARED),1)
+	python3 ../sh/fetch_picoc.py
 	python3 ../sh/apply_runtime_fixes.py
 	python3 ../sh/apply_pythonultra_features.py
 	python3 ../sh/apply_pythonultra_ui2.py
