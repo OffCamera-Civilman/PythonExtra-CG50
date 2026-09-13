@@ -9,16 +9,17 @@ text = EDITOR.read_text(encoding="utf-8")
 required = (
     "EDITOR_NAV_VERSION = 1",
     'self.popup("SHIFT VARS"',
-    '"Editor Style", "Jump to Top", "Jump to Bottom"',
+    '"Editor Style", turbo_label, "Jump to Top", "Jump to Bottom"',
     '"Jump to Line #", "Cancel"',
     "def jump_top(self):",
     "def jump_bottom(self):",
     "def jump_line(self):",
     "def vars_menu(self):",
-    "FAST_REPEAT_DELAY = 0.18",
-    "FAST_REPEAT_INTERVAL = 0.03",
+    "TURBO_DELAY_MS = 120",
+    "TURBO_INTERVAL_MS = 18",
     "def read(self, fast_repeat=False):",
     "self._keys.read(fast_repeat=True)",
+    "def repeat_step(self):",
 )
 
 missing = [item for item in required if item not in text]
