@@ -38,6 +38,7 @@ jobs:
           giteapc --help >/dev/null
 
       - name: Install fxSDK toolchain and libraries
+        timeout-minutes: 45
         shell: bash
         run: |
           set -euo pipefail
@@ -77,6 +78,12 @@ jobs:
 
           command -v fxsdk
           command -v sh-elf-gcc
+
+      - name: Cache completed fxSDK toolchain
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.local
+          key: fxsdk-${{ runner.os }}-ultradex-direct-v2
 
       - name: Create fxSDK project
         shell: bash
