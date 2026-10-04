@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include <stdint.h>
 #include <stddef.h>
+#include "dex_data.h"
 
 typedef enum {
   T_NORMAL,T_FIRE,T_WATER,T_ELECTRIC,T_GRASS,T_ICE,T_FIGHTING,T_POISON,
@@ -321,9 +322,59 @@ static void mon_search(void) {
   }
 }
 
+static int digit_from_key(int key) {
+  if(key==KEY_0) return 0;
+  if(key==KEY_1) return 1;
+  if(key==KEY_2) return 2;
+  if(key==KEY_3) return 3;
+  if(key==KEY_4) return 4;
+  if(key==KEY_5) return 5;
+  if(key==KEY_6) return 6;
+  if(key==KEY_7) return 7;
+  if(key==KEY_8) return 8;
+  if(key==KEY_9) return 9;
+  return -1;
+}
+
+static void show_dex_entry(int dex) {
+  char b[96];
+  const DexEntry *p=&national_dex[dex-1];
+  head("UltraDex - National Dex");
+  snprintf(b,sizeof b,"#%03d %s",dex,p->name); dtext(8,34,C_BLACK,b);
+  snprintf(b,sizeof b,"Generation: %u",p->gen); dtext(8,58,C_BLACK,b);
+  dtext(8,88,C_BLACK,"Full National Dex entry loaded.");
+  dtext(8,112,C_BLACK,"Detailed stats/moves are being expanded.");
+  foot("EXE/EXIT Back");
+  dupdate(); wait_back();
+}
+
+static void dex_number_search(void) {
+  char buf[5]="";
+  for(;;) {
+    head("UltraDex - Dex Number");
+    dtext(8,38,C_BLACK,"Type # using calculator number keys:");
+    dtext(8,70,C_BLACK,buf[0]?buf:"_");
+    dtext(8,102,C_BLACK,"Valid range: 1 - 1025");
+    foot("0-9 Type  DEL Erase  EXE Open  EXIT");
+    dupdate();
+    key_event_t e=getkey();
+    int d=digit_from_key(e.key);
+    if(d>=0) {
+      int n=(int)strlen(buf);
+      if(n<4) { buf[n]=(char)('0'+d); buf[n+1]=0; }
+    } else if(e.key==KEY_DEL) {
+      int n=(int)strlen(buf); if(n) buf[n-1]=0;
+    } else if(e.key==KEY_EXE) {
+      int n=0;
+      for(int i=0;buf[i];i++) n=n*10+(buf[i]-'0');
+      if(n>=1 && n<=1025) show_dex_entry(n);
+    } else if(e.key==KEY_EXIT) return;
+  }
+}
+
 int main(void) {
   int sel=0;
-  const char *menu[]={"Pokemon Search","Move Search","Generations","Browse Sample","About"};
+  const char *menu[]={"Dex # Search","Name Search","Move Search","Generations","About"};
   for(;;) {
     head("UltraDex-CG50");
     dtext(8,29,C_BLACK,"National Dex Gen 1-9 (#001-1025)");
@@ -334,19 +385,20 @@ int main(void) {
     }
     foot("UP/DN Select  EXE Open  EXIT Quit");
     dupdate(); key_event_t e=getkey();
-    if(e.key==KEY_UP)sel=(sel+3)%4;
-    else if(e.key==KEY_DOWN)sel=(sel+1)%4;
+    if(e.key==KEY_UP)sel=(sel+4)%5;
+    else if(e.key==KEY_DOWN)sel=(sel+1)%5;
     else if(e.key==KEY_EXIT)break;
     else if(e.key==KEY_EXE) {
-      if(sel==0)mon_search();
-      else if(sel==1)move_search();
-      else if(sel==2)show_mon(&mons[0]);
+      if(sel==0)dex_number_search();
+      else if(sel==1)mon_search();
+      else if(sel==2)move_search();
+      else if(sel==3)generation_info();
       else {
         head("About UltraDex");
         dtext(8,43,C_BLACK,"Text-first Pokedex for fx-CG50.");
         dtext(8,66,C_BLACK,"National Dex target: #001-1025 (Gen 1-9).");
         dtext(8,89,C_BLACK,"Moves, evolutions, stats and learnsets.");
-        dtext(8,112,C_BLACK,"This is the first testable G3A build.");
+        dtext(8,112,C_BLACK,"Physical-key Dex search enabled.");
         foot("EXE/EXIT Back"); dupdate(); wait_back();
       }
     }
