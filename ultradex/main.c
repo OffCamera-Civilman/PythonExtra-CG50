@@ -278,6 +278,20 @@ static void generation_info(void) {
   }
 }
 
+static int dex_query(const char *q) {
+  const char *s=q;
+  if(*s=='#') s++;
+  if(!*s) return -1;
+  int n=0;
+  while(*s) {
+    if(!isdigit((unsigned char)*s)) return -1;
+    n=n*10+(*s-'0');
+    if(n>1025) return -1;
+    s++;
+  }
+  return (n>=1 && n<=1025) ? n : -1;
+}
+
 static void mon_search(void) {
   char q[18]; int sel=0,top=0;
   keyboard(q,sizeof q,"Pokemon Search");
