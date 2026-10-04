@@ -37,7 +37,15 @@ jobs:
           command -v giteapc
           giteapc --help >/dev/null
 
+      - name: Restore completed fxSDK toolchain
+        id: fxsdk-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.local
+          key: fxsdk-${{ runner.os }}-ultradex-direct-v2
+
       - name: Install fxSDK toolchain and libraries
+        if: steps.fxsdk-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -79,6 +87,7 @@ jobs:
           command -v sh-elf-gcc
 
       - name: Cache completed fxSDK toolchain
+        if: steps.fxsdk-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: ~/.local
