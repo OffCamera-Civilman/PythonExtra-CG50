@@ -38,7 +38,6 @@ jobs:
           giteapc --help >/dev/null
 
       - name: Install fxSDK toolchain and libraries
-        timeout-minutes: 45
         shell: bash
         run: |
           set -euo pipefail
