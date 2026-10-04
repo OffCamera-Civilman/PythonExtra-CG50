@@ -148,7 +148,7 @@ static void keyboard(char *buf,int cap,const char *label) {
     head(label);
     dtext(8,31,C_BLACK,"Search:");
     dtext(72,31,C_BLACK,buf);
-    dtext(8,51,C_BLACK,"Arrows choose, EXE types, DEL erases");
+    dtext(8,51,C_BLACK,"Name or Dex #: 001 / #001 / Mewtwo");
     int cols=7, len=(int)strlen(keys);
     for(int i=0;i<len;i++) {
       int x=18+(i%cols)*50, y=82+(i/cols)*24;
@@ -283,7 +283,10 @@ static void mon_search(void) {
   keyboard(q,sizeof q,"Pokemon Search");
   for(;;) {
     int idx[64],n=0;
-    for(int i=0;i<MON_N;i++) if(ci_contains(mons[i].name,q))idx[n++]=i;
+    int dq=dex_query(q);
+    for(int i=0;i<MON_N;i++) {
+      if((dq>0 && mons[i].dex==dq) || (dq<0 && ci_contains(mons[i].name,q))) idx[n++]=i;
+    }
     if(!n){head("Pokemon Search");dtext(8,48,C_BLACK,"No matches.");foot("EXE/EXIT Back");dupdate();wait_back();return;}
     if(sel>=n)sel=n-1; if(sel<top)top=sel; if(sel>=top+8)top=sel-7;
     head("Pokemon Search");
