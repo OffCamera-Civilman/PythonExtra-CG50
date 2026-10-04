@@ -102,6 +102,7 @@ jobs:
           cd /tmp
           fxsdk new UltraDexBuild
           cp "$GITHUB_WORKSPACE/ultradex/main.c" UltraDexBuild/src/main.c
+          cp "$GITHUB_WORKSPACE/ultradex/dex_data.h" UltraDexBuild/src/dex_data.h
 
       - name: Build UltraDex
         working-directory: /tmp/UltraDexBuild
