@@ -142,7 +142,7 @@ static int ci_contains(const char *h,const char *n) {
 }
 
 static void keyboard(char *buf,int cap,const char *label) {
-  static const char keys[]="ABCDEFGHIJKLMNOPQRSTUVWXYZ- ";
+  static const char keys[]="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#- ";
   int cur=0; buf[0]=0;
   for(;;) {
     head(label);
