@@ -243,6 +243,41 @@ static void show_mon(const Pokemon *p) {
   }
 }
 
+static uint8_t gen_for_dex(uint16_t dex) {
+  if(dex<=151) return 1;
+  if(dex<=251) return 2;
+  if(dex<=386) return 3;
+  if(dex<=493) return 4;
+  if(dex<=649) return 5;
+  if(dex<=721) return 6;
+  if(dex<=809) return 7;
+  if(dex<=905) return 8;
+  return dex<=1025 ? 9 : 0;
+}
+
+static void generation_info(void) {
+  static const char *regions[]={"Kanto","Johto","Hoenn","Sinnoh","Unova","Kalos","Alola","Galar/Hisui","Paldea"};
+  static const uint16_t first[]={1,152,252,387,494,650,722,810,906};
+  static const uint16_t last[]={151,251,386,493,649,721,809,905,1025};
+  int sel=0;
+  for(;;) {
+    head("UltraDex - Generations");
+    for(int i=0;i<9;i++) {
+      int y=29+i*18;
+      char b[64];
+      if(i==sel)drect(4,y-2,391,y+14,C_BLACK);
+      snprintf(b,sizeof b,"Gen %d  %-11s #%03u-%04u",i+1,regions[i],first[i],last[i]);
+      dtext(10,y,i==sel?C_WHITE:C_BLACK,b);
+    }
+    foot("UP/DN Browse   EXIT Back");
+    dupdate();
+    key_event_t e=getkey();
+    if(e.key==KEY_UP)sel=(sel+8)%9;
+    else if(e.key==KEY_DOWN)sel=(sel+1)%9;
+    else if(e.key==KEY_EXIT)return;
+  }
+}
+
 static void mon_search(void) {
   char q[18]; int sel=0,top=0;
   keyboard(q,sizeof q,"Pokemon Search");
@@ -271,11 +306,11 @@ static void mon_search(void) {
 
 int main(void) {
   int sel=0;
-  const char *menu[]={"Pokemon Search","Move Search","Browse Sample","About"};
+  const char *menu[]={"Pokemon Search","Move Search","Generations","Browse Sample","About"};
   for(;;) {
     head("UltraDex-CG50");
-    dtext(8,29,C_BLACK,"Gen I-IV text Pokedex prototype");
-    for(int i=0;i<4;i++) {
+    dtext(8,29,C_BLACK,"National Dex Gen 1-9 (#001-1025)");
+    for(int i=0;i<5;i++) {
       int y=65+i*28;
       if(i==sel)drect(8,y-4,386,y+17,C_BLACK);
       dtext(18,y,sel==i?C_WHITE:C_BLACK,menu[i]);
@@ -292,7 +327,7 @@ int main(void) {
       else {
         head("About UltraDex");
         dtext(8,43,C_BLACK,"Text-first Pokedex for fx-CG50.");
-        dtext(8,66,C_BLACK,"Goal: Pokemon #001-493 (Gen I-IV).");
+        dtext(8,66,C_BLACK,"National Dex target: #001-1025 (Gen 1-9).");
         dtext(8,89,C_BLACK,"Moves, evolutions, stats and learnsets.");
         dtext(8,112,C_BLACK,"This is the first testable G3A build.");
         foot("EXE/EXIT Back"); dupdate(); wait_back();
