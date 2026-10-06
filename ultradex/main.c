@@ -162,8 +162,8 @@ static void keyboard(char *buf,int cap,const char *label) {
   for(;;) {
     head(label);
     dtext(8,31,UX_TEXT,"Search:");
-    dtext(72,31,C_BLACK,buf);
-    dtext(8,51,C_BLACK,"Name or Dex #: 001 / #001 / Mewtwo");
+    dtext(72,31,UX_TEXT,buf);
+    dtext(8,51,UX_TEXT,"Name or Dex #: 001 / #001 / Mewtwo");
     int cols=7, len=(int)strlen(keys);
     for(int i=0;i<len;i++) {
       int x=18+(i%cols)*50, y=82+(i/cols)*24;
@@ -190,13 +190,13 @@ static void show_move(const Move *m) {
   head("UltraDex - Move");
   snprintf(b,sizeof b,"%s (#%u)",m->name,m->id); dtext(8,31,UX_TEXT,b);
   snprintf(b,sizeof b,"Type: %s",type_name(m->type)); dtext(8,52,UX_TEXT,b);
-  snprintf(b,sizeof b,"Class: %s",m->cat==1?"Physical":m->cat==2?"Special":"Status"); dtext(8,72,C_BLACK,b);
+  snprintf(b,sizeof b,"Class: %s",m->cat==1?"Physical":m->cat==2?"Special":"Status"); dtext(8,72,UX_TEXT,b);
   if(m->power) snprintf(b,sizeof b,"Power: %u",m->power); else snprintf(b,sizeof b,"Power: --");
-  dtext(8,92,C_BLACK,b);
+  dtext(8,92,UX_TEXT,b);
   if(m->acc) snprintf(b,sizeof b,"Accuracy: %u%%",m->acc); else snprintf(b,sizeof b,"Accuracy: --");
-  dtext(8,112,C_BLACK,b);
-  snprintf(b,sizeof b,"PP: %u   Priority: %d",m->pp,m->priority); dtext(8,132,C_BLACK,b);
-  dtext(8,157,C_BLACK,"Effect:");
+  dtext(8,112,UX_TEXT,b);
+  snprintf(b,sizeof b,"PP: %u   Priority: %d",m->pp,m->priority); dtext(8,132,UX_TEXT,b);
+  dtext(8,157,UX_TEXT,"Effect:");
   dtext(8,176,UX_TEXT,m->effect);
   foot("EXE/EXIT Back");
   dupdate(); wait_back();
@@ -239,22 +239,22 @@ static void show_mon(const Pokemon *p) {
   int page=0;
   for(;;) {
     char b[120]; head("UltraDex - Pokemon");
-    snprintf(b,sizeof b,"#%03u %s  Gen %u",p->dex,p->name,p->gen); dtext(8,30,C_BLACK,b);
+    snprintf(b,sizeof b,"#%03u %s  Gen %u",p->dex,p->name,p->gen); dtext(8,30,UX_TEXT,b);
     snprintf(b,sizeof b,"%s%s%s",type_name(p->t1),p->t2!=T_NONE?" / ":"",p->t2!=T_NONE?type_name(p->t2):"");
-    dtext(8,49,C_BLACK,b);
+    dtext(8,49,UX_TEXT,b);
     if(page==0) {
-      snprintf(b,sizeof b,"HP %u  ATK %u  DEF %u",p->hp,p->atk,p->def); dtext(8,79,C_BLACK,b);
-      snprintf(b,sizeof b,"SPA %u  SPD %u  SPE %u",p->spa,p->spd,p->spe); dtext(8,99,C_BLACK,b);
-      dtext(8,125,C_BLACK,"Abilities:"); dtext(8,144,C_BLACK,p->abilities);
-      dtext(8,169,C_BLACK,"Evolution:"); dtext(8,188,C_BLACK,p->evo);
+      snprintf(b,sizeof b,"HP %u  ATK %u  DEF %u",p->hp,p->atk,p->def); dtext(8,79,UX_TEXT,b);
+      snprintf(b,sizeof b,"SPA %u  SPD %u  SPE %u",p->spa,p->spd,p->spe); dtext(8,99,UX_TEXT,b);
+      dtext(8,125,UX_TEXT,"Abilities:"); dtext(8,144,UX_TEXT,p->abilities);
+      dtext(8,169,UX_TEXT,"Evolution:"); dtext(8,188,UX_TEXT,p->evo);
     } else {
-      dtext(8,76,C_BLACK,"Learnset sample:");
+      dtext(8,76,UX_TEXT,"Learnset sample:");
       for(int i=0;i<p->learn_n && i<6;i++) {
         const Move *m=move_by_id(p->learn[i].move_id); if(!m)continue;
         if(p->learn[i].method==0) snprintf(b,sizeof b,"Lv %02u  %s",p->learn[i].level,m->name);
         else if(p->learn[i].method==1) snprintf(b,sizeof b,"TM/HM  %s",m->name);
         else snprintf(b,sizeof b,"Other  %s",m->name);
-        dtext(14,98+i*17,C_BLACK,b);
+        dtext(14,98+i*17,UX_TEXT,b);
       }
     }
     foot("F1 Info  F2 Moves  EXIT");
@@ -382,11 +382,11 @@ static void show_dex_entry(int dex) {
   char b[96];
   const DexEntry *p=&national_dex[dex-1];
   head("UltraDex - National Dex");
-  snprintf(b,sizeof b,"#%03d %s   Gen %u",dex,p->name,p->gen); dtext(8,32,C_BLACK,b);
-  snprintf(b,sizeof b,"Type: %s%s%s",type_name(pokeapi_type(p->t1)),p->t2?" / ":"",p->t2?type_name(pokeapi_type(p->t2)):""); dtext(8,56,C_BLACK,b);
-  dtext(8,84,C_BLACK,"Base Stats");
-  snprintf(b,sizeof b,"HP  %3u     ATK %3u     DEF %3u",p->hp,p->atk,p->def); dtext(8,108,C_BLACK,b);
-  snprintf(b,sizeof b,"SPA %3u     SPD %3u     SPE %3u",p->spa,p->spd,p->spe); dtext(8,132,C_BLACK,b);
+  snprintf(b,sizeof b,"#%03d %s   Gen %u",dex,p->name,p->gen); dtext(8,32,UX_TEXT,b);
+  snprintf(b,sizeof b,"Type: %s%s%s",type_name(pokeapi_type(p->t1)),p->t2?" / ":"",p->t2?type_name(pokeapi_type(p->t2)):""); dtext(8,56,UX_TEXT,b);
+  dtext(8,84,UX_TEXT,"Base Stats");
+  snprintf(b,sizeof b,"HP  %3u     ATK %3u     DEF %3u",p->hp,p->atk,p->def); dtext(8,108,UX_TEXT,b);
+  snprintf(b,sizeof b,"SPA %3u     SPD %3u     SPE %3u",p->spa,p->spd,p->spe); dtext(8,132,UX_TEXT,b);
   snprintf(b,sizeof b,"Base Stat Total: %u",(unsigned)(p->hp+p->atk+p->def+p->spa+p->spd+p->spe)); dtext(8,154,UX_TEXT,b);
   const DexAbilities *a=&dex_abilities[dex-1];
   snprintf(b,sizeof b,"Ability: %s%s%s",ability_names[a->a0],a->a1?" / ":"",a->a1?ability_names[a->a1]:""); dtext(8,176,UX_TEXT,b);
@@ -399,9 +399,9 @@ static void dex_number_search(void) {
   char buf[5]="";
   for(;;) {
     head("UltraDex - Dex Number");
-    dtext(8,38,C_BLACK,"Type # using calculator number keys:");
-    dtext(8,70,C_BLACK,buf[0]?buf:"_");
-    dtext(8,102,C_BLACK,"Valid range: 1 - 1025");
+    dtext(8,38,UX_TEXT,"Type # using calculator number keys:");
+    dtext(8,70,UX_TEXT,buf[0]?buf:"_");
+    dtext(8,102,UX_TEXT,"Valid range: 1 - 1025");
     foot("0-9 Type  DEL Erase  EXE Open  EXIT");
     dupdate();
     key_event_t e=getkey();
@@ -424,7 +424,7 @@ int main(void) {
   const char *menu[]={"Dex # Search","Name Search","Move Search","Generations","About"};
   for(;;) {
     head("UltraDex-CG50"); /* Mewtwo icon build */
-    dtext(8,29,C_BLACK,"National Dex Gen 1-9 (#001-1025)");
+    dtext(8,29,UX_TEXT,"National Dex Gen 1-9 (#001-1025)");
     for(int i=0;i<5;i++) {
       int y=65+i*28;
       if(i==sel)drect(8,y-4,386,y+17,C_BLACK);
@@ -442,10 +442,10 @@ int main(void) {
       else if(sel==3)generation_info();
       else {
         head("About UltraDex");
-        dtext(8,43,C_BLACK,"Text-first Pokedex for fx-CG50.");
-        dtext(8,66,C_BLACK,"National Dex target: #001-1025 (Gen 1-9).");
-        dtext(8,89,C_BLACK,"Moves, evolutions, stats and learnsets.");
-        dtext(8,112,C_BLACK,"Physical-key Dex search enabled.");
+        dtext(8,43,UX_TEXT,"Text-first Pokedex for fx-CG50.");
+        dtext(8,66,UX_TEXT,"National Dex target: #001-1025 (Gen 1-9).");
+        dtext(8,89,UX_TEXT,"Moves, evolutions, stats and learnsets.");
+        dtext(8,112,UX_TEXT,"Physical-key Dex search enabled.");
         foot("EXE/EXIT Back"); dupdate(); wait_back();
       }
     }
