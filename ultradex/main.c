@@ -336,14 +336,21 @@ static int digit_from_key(int key) {
   return -1;
 }
 
+static TypeId pokeapi_type(uint8_t t) {
+  static const TypeId map[19]={T_NONE,T_NORMAL,T_FIGHTING,T_FLYING,T_POISON,T_GROUND,T_ROCK,T_BUG,T_GHOST,T_STEEL,T_FIRE,T_WATER,T_GRASS,T_ELECTRIC,T_PSYCHIC,T_ICE,T_DRAGON,T_DARK,T_FAIRY};
+  return t<19?map[t]:T_NONE;
+}
+
 static void show_dex_entry(int dex) {
   char b[96];
   const DexEntry *p=&national_dex[dex-1];
   head("UltraDex - National Dex");
-  snprintf(b,sizeof b,"#%03d %s",dex,p->name); dtext(8,34,C_BLACK,b);
-  snprintf(b,sizeof b,"Generation: %u",p->gen); dtext(8,58,C_BLACK,b);
-  dtext(8,88,C_BLACK,"Full National Dex entry loaded.");
-  dtext(8,112,C_BLACK,"Detailed stats/moves are being expanded.");
+  snprintf(b,sizeof b,"#%03d %s   Gen %u",dex,p->name,p->gen); dtext(8,32,C_BLACK,b);
+  snprintf(b,sizeof b,"Type: %s%s%s",type_name(pokeapi_type(p->t1)),p->t2?" / ":"",p->t2?type_name(pokeapi_type(p->t2)):""); dtext(8,56,C_BLACK,b);
+  dtext(8,84,C_BLACK,"Base Stats");
+  snprintf(b,sizeof b,"HP  %3u     ATK %3u     DEF %3u",p->hp,p->atk,p->def); dtext(8,108,C_BLACK,b);
+  snprintf(b,sizeof b,"SPA %3u     SPD %3u     SPE %3u",p->spa,p->spd,p->spe); dtext(8,132,C_BLACK,b);
+  snprintf(b,sizeof b,"Base Stat Total: %u",(unsigned)(p->hp+p->atk+p->def+p->spa+p->spd+p->spe)); dtext(8,158,C_BLACK,b);
   foot("EXE/EXIT Back");
   dupdate(); wait_back();
 }
