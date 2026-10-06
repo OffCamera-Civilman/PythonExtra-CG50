@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "dex_data.h"
+#include "ability_data.h"
 
 typedef enum {
   T_NORMAL,T_FIRE,T_WATER,T_ELECTRIC,T_GRASS,T_ICE,T_FIGHTING,T_POISON,
@@ -373,7 +374,10 @@ static void show_dex_entry(int dex) {
   dtext(8,84,C_BLACK,"Base Stats");
   snprintf(b,sizeof b,"HP  %3u     ATK %3u     DEF %3u",p->hp,p->atk,p->def); dtext(8,108,C_BLACK,b);
   snprintf(b,sizeof b,"SPA %3u     SPD %3u     SPE %3u",p->spa,p->spd,p->spe); dtext(8,132,C_BLACK,b);
-  snprintf(b,sizeof b,"Base Stat Total: %u",(unsigned)(p->hp+p->atk+p->def+p->spa+p->spd+p->spe)); dtext(8,158,C_BLACK,b);
+  snprintf(b,sizeof b,"Base Stat Total: %u",(unsigned)(p->hp+p->atk+p->def+p->spa+p->spd+p->spe)); dtext(8,154,C_BLACK,b);
+  const DexAbilities *a=&dex_abilities[dex-1];
+  snprintf(b,sizeof b,"Ability: %s%s%s",ability_names[a->a0],a->a1?" / ":"",a->a1?ability_names[a->a1]:""); dtext(8,176,C_BLACK,b);
+  if(a->hidden){snprintf(b,sizeof b,"Hidden: %s",ability_names[a->hidden]); dtext(8,194,C_BLACK,b);}
   foot("EXE/EXIT Back");
   dupdate(); wait_back();
 }
