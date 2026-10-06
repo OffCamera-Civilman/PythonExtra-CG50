@@ -305,6 +305,8 @@ static char alpha_letter(int key) {
   if(key==KEY_SUB)return 'Y'; if(key==KEY_0)return 'Z'; return 0;
 }
 
+static void show_dex_entry(int dex);
+
 static void mon_search(void) {
   char q[18]=""; int sel=0,top=0,alpha=0;
   for(;;) {
