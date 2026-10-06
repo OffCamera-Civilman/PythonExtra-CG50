@@ -169,7 +169,7 @@ static void keyboard(char *buf,int cap,const char *label) {
       int x=18+(i%cols)*50, y=82+(i/cols)*24;
       if(i==cur) drect(x-3,y-3,x+28,y+14,C_BLACK);
       char q[2]={keys[i],0};
-      dtext(x,y,i==cur?C_WHITE:C_BLACK,q);
+      dtext(x,y,UX_TEXT,q);
     }
     foot("F6 Done   EXIT Cancel");
     dupdate();
@@ -289,7 +289,7 @@ static void generation_info(void) {
       char b[64];
       if(i==sel)ux_select(y);
       snprintf(b,sizeof b,"Gen %d  %-11s #%03u-%04u",i+1,regions[i],first[i],last[i]);
-      dtext(10,y,i==sel?C_WHITE:C_BLACK,b);
+      dtext(10,y,UX_TEXT,b);
     }
     foot("UP/DN Browse   EXIT Back");
     dupdate();
@@ -428,7 +428,7 @@ int main(void) {
     for(int i=0;i<5;i++) {
       int y=65+i*28;
       if(i==sel)drect(8,y-4,386,y+17,C_BLACK);
-      dtext(18,y,sel==i?C_WHITE:C_BLACK,menu[i]);
+      dtext(18,y,UX_TEXT,menu[i]);
     }
     foot("UP/DN Select  EXE Open  EXIT Quit");
     dupdate(); key_event_t e=getkey();
