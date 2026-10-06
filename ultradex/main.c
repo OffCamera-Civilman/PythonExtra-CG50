@@ -188,29 +188,36 @@ static void show_move(const Move *m) {
   dupdate(); wait_back();
 }
 
+static char alpha_letter(int key);
+
 static void move_search(void) {
-  char q[18]; int sel=0,top=0;
-  keyboard(q,sizeof q,"Move Search");
+  char q[24]=""; int sel=0,top=0;
   for(;;) {
-    int idx[64],n=0;
+    int idx[MOVE_N],n=0;
     for(int i=0;i<MOVE_N;i++) if(ci_contains(moves[i].name,q)) idx[n++]=i;
-    if(!n){head("Move Search");dtext(8,48,C_BLACK,"No matches.");foot("EXE/EXIT Back");dupdate();wait_back();return;}
-    if(sel>=n)sel=n-1; if(sel<top)top=sel; if(sel>=top+8)top=sel-7;
-    head("Move Search");
-    char b[64]; snprintf(b,sizeof b,"%s  (%d)",q,n); dtext(8,27,C_BLACK,b);
+    if(sel>=n)sel=n?n-1:0;
+    if(sel<top)top=sel;
+    if(sel>=top+8)top=sel-7;
+    head("UltraDex - Move Search");
+    char b[64]; snprintf(b,sizeof b,"Move: %s%s",q,q[0]?"":"_"); dtext(8,27,C_BLACK,b);
+    snprintf(b,sizeof b,"Matches: %d",n); dtext(285,27,C_BLACK,b);
     for(int r=0;r<8 && top+r<n;r++) {
       const Move *m=&moves[idx[top+r]]; int y=48+r*18;
       if(top+r==sel)drect(4,y-2,391,y+14,C_BLACK);
       snprintf(b,sizeof b,"%-17s %s",m->name,type_name(m->type));
       dtext(10,y,top+r==sel?C_WHITE:C_BLACK,b);
     }
-    foot("UP/DN  EXE Open  F1 Search  EXIT");
+    foot("ALPHA keys Type  DEL Erase  EXE Open");
     dupdate(); key_event_t e=getkey();
-    if(e.key==KEY_UP && sel>0)sel--;
+    if(e.key==KEY_DEL) { int z=(int)strlen(q); if(z)q[z-1]=0; sel=top=0; }
+    else if(e.key==KEY_UP && sel>0)sel--;
     else if(e.key==KEY_DOWN && sel<n-1)sel++;
-    else if(e.key==KEY_EXE)show_move(&moves[idx[sel]]);
-    else if(e.key==KEY_F1){keyboard(q,sizeof q,"Move Search");sel=top=0;}
+    else if(e.key==KEY_EXE && n)show_move(&moves[idx[sel]]);
     else if(e.key==KEY_EXIT)return;
+    else {
+      char ch=alpha_letter(e.key); int z=(int)strlen(q);
+      if(ch && z+1<(int)sizeof q){q[z]=ch;q[z+1]=0;sel=top=0;}
+    }
   }
 }
 
@@ -308,29 +315,30 @@ static char alpha_letter(int key) {
 static void show_dex_entry(int dex);
 
 static void mon_search(void) {
-  char q[18]=""; int sel=0,top=0,alpha=0;
+  char q[18]=""; int sel=0,top=0;
   for(;;) {
     int idx[1025],n=0;
     for(int i=0;i<1025;i++) if(ci_contains(national_dex[i].name,q)) idx[n++]=i;
-    if(sel>=n)sel=n?n-1:0; if(sel<top)top=sel; if(sel>=top+8)top=sel-7;
+    if(sel>=n)sel=n?n-1:0;
+    if(sel<top)top=sel;
+    if(sel>=top+8)top=sel-7;
     head("UltraDex - Name Search");
     char b[64]; snprintf(b,sizeof b,"Name: %s%s",q,q[0]?"":"_"); dtext(8,27,C_BLACK,b);
-    snprintf(b,sizeof b,"Matches: %d   ALPHA: %s",n,alpha?"ON":"OFF"); dtext(220,27,C_BLACK,b);
+    snprintf(b,sizeof b,"Matches: %d",n); dtext(285,27,C_BLACK,b);
     for(int r=0;r<8 && top+r<n;r++) {
       const DexEntry *p=&national_dex[idx[top+r]]; int y=48+r*18;
       if(top+r==sel)drect(4,y-2,391,y+14,C_BLACK);
       snprintf(b,sizeof b,"#%03d %-20s G%u",idx[top+r]+1,p->name,p->gen);
       dtext(10,y,top+r==sel?C_WHITE:C_BLACK,b);
     }
-    foot("ALPHA Type  DEL Erase  UP/DN  EXE Open");
+    foot("ALPHA keys Type  DEL Erase  EXE Open");
     dupdate(); key_event_t e=getkey();
-    if(e.key==KEY_ALPHA) alpha=!alpha;
-    else if(e.key==KEY_DEL) { int z=(int)strlen(q); if(z)q[z-1]=0; sel=top=0; }
+    if(e.key==KEY_DEL) { int z=(int)strlen(q); if(z)q[z-1]=0; sel=top=0; }
     else if(e.key==KEY_UP && sel>0)sel--;
     else if(e.key==KEY_DOWN && sel<n-1)sel++;
     else if(e.key==KEY_EXE && n)show_dex_entry(idx[sel]+1);
     else if(e.key==KEY_EXIT)return;
-    else if(alpha) {
+    else {
       char ch=alpha_letter(e.key); int z=(int)strlen(q);
       if(ch && z+1<(int)sizeof q){q[z]=ch;q[z+1]=0;sel=top=0;}
     }
