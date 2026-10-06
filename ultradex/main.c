@@ -118,14 +118,27 @@ static const Move *move_by_id(uint16_t id) {
   return NULL;
 }
 
+/* UltraDex electric theme */
+#define UX_BG C_RGB(0,0,0)
+#define UX_PANEL C_RGB(0,18,30)
+#define UX_BLUE C_RGB(0,170,255)
+#define UX_BLUE2 C_RGB(0,90,190)
+#define UX_TEXT C_RGB(255,255,255)
+#define UX_MUTED C_RGB(155,205,225)
+
+static void ux_clear(void) { dclear(UX_BG); }
+static void ux_text(int x,int y,const char *s) { dtext(x,y,UX_TEXT,s); }
+static void ux_select(int y) { drect(3,y-3,392,y+14,UX_BLUE2); }
 static void head(const char *s) {
-  dclear(C_WHITE);
-  drect(0,0,395,22,C_BLACK);
-  dtext(8,5,C_WHITE,s);
+  ux_clear();
+  drect(0,0,395,22,UX_PANEL);
+  drect(0,21,395,22,UX_BLUE);
+  dtext(8,5,UX_TEXT,s);
 }
 static void foot(const char *s) {
-  drect(0,205,395,223,C_BLACK);
-  dtext(6,209,C_WHITE,s);
+  drect(0,204,395,223,UX_PANEL);
+  drect(0,204,395,204,UX_BLUE);
+  dtext(6,209,UX_TEXT,s);
 }
 static void wait_back(void) {
   while(1) {
@@ -148,7 +161,7 @@ static void keyboard(char *buf,int cap,const char *label) {
   int cur=0; buf[0]=0;
   for(;;) {
     head(label);
-    dtext(8,31,C_BLACK,"Search:");
+    dtext(8,31,UX_TEXT,"Search:");
     dtext(72,31,C_BLACK,buf);
     dtext(8,51,C_BLACK,"Name or Dex #: 001 / #001 / Mewtwo");
     int cols=7, len=(int)strlen(keys);
@@ -175,8 +188,8 @@ static void keyboard(char *buf,int cap,const char *label) {
 static void show_move(const Move *m) {
   char b[96];
   head("UltraDex - Move");
-  snprintf(b,sizeof b,"%s (#%u)",m->name,m->id); dtext(8,31,C_BLACK,b);
-  snprintf(b,sizeof b,"Type: %s",type_name(m->type)); dtext(8,52,C_BLACK,b);
+  snprintf(b,sizeof b,"%s (#%u)",m->name,m->id); dtext(8,31,UX_TEXT,b);
+  snprintf(b,sizeof b,"Type: %s",type_name(m->type)); dtext(8,52,UX_TEXT,b);
   snprintf(b,sizeof b,"Class: %s",m->cat==1?"Physical":m->cat==2?"Special":"Status"); dtext(8,72,C_BLACK,b);
   if(m->power) snprintf(b,sizeof b,"Power: %u",m->power); else snprintf(b,sizeof b,"Power: --");
   dtext(8,92,C_BLACK,b);
@@ -184,7 +197,7 @@ static void show_move(const Move *m) {
   dtext(8,112,C_BLACK,b);
   snprintf(b,sizeof b,"PP: %u   Priority: %d",m->pp,m->priority); dtext(8,132,C_BLACK,b);
   dtext(8,157,C_BLACK,"Effect:");
-  dtext(8,176,C_BLACK,m->effect);
+  dtext(8,176,UX_TEXT,m->effect);
   foot("EXE/EXIT Back");
   dupdate(); wait_back();
 }
@@ -200,13 +213,13 @@ static void move_search(void) {
     if(sel<top)top=sel;
     if(sel>=top+8)top=sel-7;
     head("UltraDex - Move Search");
-    char b[64]; snprintf(b,sizeof b,"Move: %s%s",q,q[0]?"":"_"); dtext(8,27,C_BLACK,b);
-    snprintf(b,sizeof b,"Matches: %d",n); dtext(285,27,C_BLACK,b);
+    char b[64]; snprintf(b,sizeof b,"Move: %s%s",q,q[0]?"":"_"); dtext(8,27,UX_TEXT,b);
+    snprintf(b,sizeof b,"Matches: %d",n); dtext(285,27,UX_MUTED,b);
     for(int r=0;r<8 && top+r<n;r++) {
       const Move *m=&moves[idx[top+r]]; int y=48+r*18;
-      if(top+r==sel)drect(4,y-2,391,y+14,C_BLACK);
+      if(top+r==sel)ux_select(y);
       snprintf(b,sizeof b,"%-17s %s",m->name,type_name(m->type));
-      dtext(10,y,top+r==sel?C_WHITE:C_BLACK,b);
+      dtext(10,y,top+r==sel?UX_TEXT:UX_TEXT,b);
     }
     foot("ALPHA keys Type  DEL Erase  EXE Open");
     dupdate(); key_event_t e=getkey();
@@ -274,7 +287,7 @@ static void generation_info(void) {
     for(int i=0;i<9;i++) {
       int y=29+i*18;
       char b[64];
-      if(i==sel)drect(4,y-2,391,y+14,C_BLACK);
+      if(i==sel)ux_select(y);
       snprintf(b,sizeof b,"Gen %d  %-11s #%03u-%04u",i+1,regions[i],first[i],last[i]);
       dtext(10,y,i==sel?C_WHITE:C_BLACK,b);
     }
@@ -324,13 +337,13 @@ static void mon_search(void) {
     if(sel<top)top=sel;
     if(sel>=top+8)top=sel-7;
     head("UltraDex - Name Search");
-    char b[64]; snprintf(b,sizeof b,"Name: %s%s",q,q[0]?"":"_"); dtext(8,27,C_BLACK,b);
-    snprintf(b,sizeof b,"Matches: %d",n); dtext(285,27,C_BLACK,b);
+    char b[64]; snprintf(b,sizeof b,"Name: %s%s",q,q[0]?"":"_"); dtext(8,27,UX_TEXT,b);
+    snprintf(b,sizeof b,"Matches: %d",n); dtext(285,27,UX_MUTED,b);
     for(int r=0;r<8 && top+r<n;r++) {
       const DexEntry *p=&national_dex[idx[top+r]]; int y=48+r*18;
-      if(top+r==sel)drect(4,y-2,391,y+14,C_BLACK);
+      if(top+r==sel)ux_select(y);
       snprintf(b,sizeof b,"#%03d %-20s G%u",idx[top+r]+1,p->name,p->gen);
-      dtext(10,y,top+r==sel?C_WHITE:C_BLACK,b);
+      dtext(10,y,top+r==sel?UX_TEXT:UX_TEXT,b);
     }
     foot("ALPHA keys Type  DEL Erase  EXE Open");
     dupdate(); key_event_t e=getkey();
@@ -374,10 +387,10 @@ static void show_dex_entry(int dex) {
   dtext(8,84,C_BLACK,"Base Stats");
   snprintf(b,sizeof b,"HP  %3u     ATK %3u     DEF %3u",p->hp,p->atk,p->def); dtext(8,108,C_BLACK,b);
   snprintf(b,sizeof b,"SPA %3u     SPD %3u     SPE %3u",p->spa,p->spd,p->spe); dtext(8,132,C_BLACK,b);
-  snprintf(b,sizeof b,"Base Stat Total: %u",(unsigned)(p->hp+p->atk+p->def+p->spa+p->spd+p->spe)); dtext(8,154,C_BLACK,b);
+  snprintf(b,sizeof b,"Base Stat Total: %u",(unsigned)(p->hp+p->atk+p->def+p->spa+p->spd+p->spe)); dtext(8,154,UX_TEXT,b);
   const DexAbilities *a=&dex_abilities[dex-1];
-  snprintf(b,sizeof b,"Ability: %s%s%s",ability_names[a->a0],a->a1?" / ":"",a->a1?ability_names[a->a1]:""); dtext(8,176,C_BLACK,b);
-  if(a->hidden){snprintf(b,sizeof b,"Hidden: %s",ability_names[a->hidden]); dtext(8,194,C_BLACK,b);}
+  snprintf(b,sizeof b,"Ability: %s%s%s",ability_names[a->a0],a->a1?" / ":"",a->a1?ability_names[a->a1]:""); dtext(8,176,UX_TEXT,b);
+  if(a->hidden){snprintf(b,sizeof b,"Hidden: %s",ability_names[a->hidden]); dtext(8,194,UX_TEXT,b);}
   foot("EXE/EXIT Back");
   dupdate(); wait_back();
 }
