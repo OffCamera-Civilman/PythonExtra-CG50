@@ -106,6 +106,15 @@ jobs:
           mkdir -p UltraDexBuild/assets-cg
           cp "$GITHUB_WORKSPACE/ultradex/icon-uns.png" UltraDexBuild/assets-cg/icon-uns.png
           cp "$GITHUB_WORKSPACE/ultradex/icon-sel.png" UltraDexBuild/assets-cg/icon-sel.png
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("UltraDexBuild/CMakeLists.txt")
+          s=p.read_text()
+          s=s.replace('NAME "MyAddin"', 'NAME "UltraDex"')
+          s=s.replace('NAME "My add-in"', 'NAME "UltraDex"')
+          p.write_text(s)
+          print(p.read_text())
+          PY
 
       - name: Build UltraDex
         working-directory: /tmp/UltraDexBuild
