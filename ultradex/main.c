@@ -376,7 +376,7 @@ int main(void) {
   int sel=0;
   const char *menu[]={"Dex # Search","Name Search","Move Search","Generations","About"};
   for(;;) {
-    head("UltraDex-CG50");
+    head("UltraDex-CG50"); /* Mewtwo icon build */
     dtext(8,29,C_BLACK,"National Dex Gen 1-9 (#001-1025)");
     for(int i=0;i<5;i++) {
       int y=65+i*28;
