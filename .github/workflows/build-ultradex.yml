@@ -103,6 +103,9 @@ jobs:
           fxsdk new UltraDexBuild
           cp "$GITHUB_WORKSPACE/ultradex/main.c" UltraDexBuild/src/main.c
           cp "$GITHUB_WORKSPACE/ultradex/dex_data.h" UltraDexBuild/src/dex_data.h
+          mkdir -p UltraDexBuild/assets-cg
+          cp "$GITHUB_WORKSPACE/ultradex/icon-uns.png" UltraDexBuild/assets-cg/icon-uns.png
+          cp "$GITHUB_WORKSPACE/ultradex/icon-sel.png" UltraDexBuild/assets-cg/icon-sel.png
 
       - name: Build UltraDex
         working-directory: /tmp/UltraDexBuild
