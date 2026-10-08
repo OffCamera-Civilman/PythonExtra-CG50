@@ -1172,6 +1172,35 @@ static uint8_t gen_for_dex(uint16_t dex) {
   return dex<=1025 ? 9 : 0;
 }
 
+static void show_dex_entry(int dex);
+
+static void browse_generation(int gen, int first, int last, const char *region) {
+  int sel=0,top=0;
+  const int count=last-first+1;
+  for(;;) {
+    if(sel<top)top=sel;
+    if(sel>=top+8)top=sel-7;
+    char b[72];
+    snprintf(b,sizeof b,"Gen %d - %s",gen,region);
+    head(b);
+    snprintf(b,sizeof b,"Pokemon #%03d - #%04d   (%d)",first,last,count);
+    dtext(8,27,UX_MUTED,b);
+    for(int r=0;r<8 && top+r<count;r++) {
+      int dex=first+top+r, y=48+r*18;
+      if(top+r==sel)ux_select(y);
+      snprintf(b,sizeof b,"#%03d  %s",dex,national_dex[dex-1].name);
+      dtext(10,y,UX_TEXT,b);
+    }
+    foot("UP/DN Browse  EXE Open  EXIT Back");
+    dupdate();
+    key_event_t e=getkey();
+    if(e.key==KEY_UP && sel>0)sel--;
+    else if(e.key==KEY_DOWN && sel<count-1)sel++;
+    else if(e.key==KEY_EXE)show_dex_entry(first+sel);
+    else if(e.key==KEY_EXIT)return;
+  }
+}
+
 static void generation_info(void) {
   static const char *regions[]={"Kanto","Johto","Hoenn","Sinnoh","Unova","Kalos","Alola","Galar/Hisui","Paldea"};
   static const uint16_t first[]={1,152,252,387,494,650,722,810,906};
@@ -1186,11 +1215,12 @@ static void generation_info(void) {
       snprintf(b,sizeof b,"Gen %d  %-11s #%03u-%04u",i+1,regions[i],first[i],last[i]);
       dtext(10,y,UX_TEXT,b);
     }
-    foot("UP/DN Browse   EXIT Back");
+    foot("UP/DN Select  EXE Open  EXIT Back");
     dupdate();
     key_event_t e=getkey();
     if(e.key==KEY_UP)sel=(sel+8)%9;
     else if(e.key==KEY_DOWN)sel=(sel+1)%9;
+    else if(e.key==KEY_EXE)browse_generation(sel+1,first[sel],last[sel],regions[sel]);
     else if(e.key==KEY_EXIT)return;
   }
 }
