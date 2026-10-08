@@ -994,6 +994,24 @@ static const Move *move_by_id(uint16_t id) {
   for(int i=0;i<MOVE_N;i++) if(moves[i].id==id) return &moves[i];
   return NULL;
 }
+/* Verified move effects; fallback remains explicit until catalog is complete. */
+static const char *move_effect(uint16_t id) {
+  switch(id) {
+    case 247: return "20% chance: target Sp. Def -1.";
+    case 85: return "10% chance to paralyze target.";
+    case 89: return "Hits all adjacent Pokemon.";
+    case 94: return "10% chance: target Sp. Def -1.";
+    case 98: return "Usually moves first (+1 priority).";
+    case 52: return "10% chance to burn target.";
+    case 55: return "Deals Water-type damage.";
+    case 126: return "10% chance to burn target.";
+    case 129: return "Ignores accuracy checks.";
+    case 33: return "Deals Normal-type damage.";
+    case 39: return "Lowers target Defense by 1.";
+    case 45: return "Lowers target Attack by 1.";
+    default: return "Effect details not added yet.";
+  }
+}
 
 /* UltraDex electric theme */
 #define UX_BG C_RGB(0,0,0)
@@ -1044,7 +1062,7 @@ static void keyboard(char *buf,int cap,const char *label) {
     int cols=7, len=(int)strlen(keys);
     for(int i=0;i<len;i++) {
       int x=18+(i%cols)*50, y=82+(i/cols)*24;
-      if(i==cur) drect(x-3,y-3,x+28,y+14,C_BLACK);
+      if(i==cur) drect(x-3,y-3,x+28,y+14,UX_BLUE2);
       char q[2]={keys[i],0};
       dtext(x,y,UX_TEXT,q);
     }
