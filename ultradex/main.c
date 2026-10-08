@@ -128,7 +128,7 @@ static const Move *move_by_id(uint16_t id) {
 
 static void ux_clear(void) { dclear(UX_BG); }
 static void ux_text(int x,int y,const char *s) { dtext(x,y,UX_TEXT,s); }
-static void ux_select(int y) { drect(3,y-3,392,y+14,UX_BLUE2); }
+static void ux_select(int y) { drect(3,y-3,392,y+14,UX_BLUE2); drect(3,y-3,392,y-2,UX_BLUE); }
 static void head(const char *s) {
   ux_clear();
   drect(0,0,395,22,UX_PANEL);
@@ -427,7 +427,7 @@ int main(void) {
     dtext(8,29,UX_TEXT,"National Dex Gen 1-9 (#001-1025)");
     for(int i=0;i<5;i++) {
       int y=65+i*28;
-      if(i==sel)drect(8,y-4,386,y+17,C_BLACK);
+      if(i==sel){ drect(8,y-4,386,y+17,UX_BLUE2); drect(8,y-4,386,y-3,UX_BLUE); }
       dtext(18,y,UX_TEXT,menu[i]);
     }
     foot("UP/DN Select  EXE Open  EXIT Quit");
