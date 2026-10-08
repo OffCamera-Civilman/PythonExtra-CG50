@@ -2,6 +2,8 @@ name: Build UltraDex CG50
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '17 5 * * *'
   push:
     branches:
       - cg50-new-display
@@ -93,6 +95,12 @@ jobs:
           path: ~/.local
           key: fxsdk-${{ runner.os }}-ultradex-direct-v2
 
+      - name: Validate UltraDex data
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 ultradex/validate_data.py
+
       - name: Create fxSDK project
         shell: bash
         run: |
@@ -104,6 +112,9 @@ jobs:
           cp "$GITHUB_WORKSPACE/ultradex/main.c" UltraDexBuild/src/main.c
           cp "$GITHUB_WORKSPACE/ultradex/dex_data.h" UltraDexBuild/src/dex_data.h
           cp "$GITHUB_WORKSPACE/ultradex/ability_data.h" UltraDexBuild/src/ability_data.h
+          if [ -f "$GITHUB_WORKSPACE/ultradex/learnset_data.h" ]; then
+            cp "$GITHUB_WORKSPACE/ultradex/learnset_data.h" UltraDexBuild/src/learnset_data.h
+          fi
           mkdir -p UltraDexBuild/assets-cg
           cp "$GITHUB_WORKSPACE/ultradex/icon-uns.png" UltraDexBuild/assets-cg/icon-uns.png
           cp "$GITHUB_WORKSPACE/ultradex/icon-sel.png" UltraDexBuild/assets-cg/icon-sel.png
@@ -132,6 +143,6 @@ jobs:
       - name: Upload UltraDex
         uses: actions/upload-artifact@v4
         with:
-          name: UltraDex-CG50
+          name: UltraDex-CG50-${{ github.run_number }}
           path: UltraDex-CG50.g3a
           if-no-files-found: error
