@@ -1092,7 +1092,7 @@ static void show_move(const Move *m) {
   dtext(8,112,UX_TEXT,b);
   snprintf(b,sizeof b,"PP: %u   Priority: %d",m->pp,m->priority); dtext(8,132,UX_TEXT,b);
   dtext(8,157,UX_TEXT,"Effect:");
-  dtext(8,176,UX_TEXT,m->effect);
+  dtext(8,176,UX_TEXT,move_effect(m->id));
   foot("EXE/EXIT Back");
   dupdate(); wait_back();
 }
