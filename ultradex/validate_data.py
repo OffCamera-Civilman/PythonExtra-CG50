@@ -4,7 +4,7 @@ import re
 from pathlib import Path
 root=Path(__file__).resolve().parent
 dex=(root/'dex_data.h').read_text()
-names=re.findall(r'\{"([^"]+)",\d+(?:,\d+){8}\}',dex)
+names=re.findall(r'\{"([^"]+)",\d+(?:,\d+){9}\}',dex)
 assert len(names)==1025, f'Expected 1025 Pokemon, got {len(names)}'
 assert len(set(names))==1025, 'Duplicate species names'
 abilities=(root/'ability_data.h').read_text()
