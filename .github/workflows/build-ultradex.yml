@@ -137,12 +137,12 @@ jobs:
           fxsdk build-cg
           G3A="$(find . -name '*.g3a' | head -n1)"
           test -n "$G3A"
-          cp "$G3A" "$GITHUB_WORKSPACE/UltraDex-CG50.g3a"
-          ls -lh "$GITHUB_WORKSPACE/UltraDex-CG50.g3a"
+          cp "$G3A" "$GITHUB_WORKSPACE/UltraDex-CG50-Run${{ github.run_number }}.g3a"
+          ls -lh "$GITHUB_WORKSPACE/UltraDex-CG50-Run${{ github.run_number }}.g3a"
 
       - name: Upload UltraDex
         uses: actions/upload-artifact@v4
         with:
           name: UltraDex-CG50-${{ github.run_number }}
-          path: UltraDex-CG50.g3a
+          path: UltraDex-CG50-Run${{ github.run_number }}.g3a
           if-no-files-found: error
