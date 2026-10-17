@@ -1306,18 +1306,47 @@ static TypeId pokeapi_type(uint8_t t) {
 static void show_dex_entry(int dex) {
   char b[96];
   const DexEntry *p=&national_dex[dex-1];
-  head("UltraDex - National Dex");
-  snprintf(b,sizeof b,"#%03d %s   Gen %u",dex,p->name,p->gen); dtext(8,32,UX_TEXT,b);
-  snprintf(b,sizeof b,"Type: %s%s%s",type_name(pokeapi_type(p->t1)),p->t2?" / ":"",p->t2?type_name(pokeapi_type(p->t2)):""); dtext(8,56,UX_TEXT,b);
-  dtext(8,84,UX_TEXT,"Base Stats");
-  snprintf(b,sizeof b,"HP  %3u     ATK %3u     DEF %3u",p->hp,p->atk,p->def); dtext(8,108,UX_TEXT,b);
-  snprintf(b,sizeof b,"SPA %3u     SPD %3u     SPE %3u",p->spa,p->spd,p->spe); dtext(8,132,UX_TEXT,b);
-  snprintf(b,sizeof b,"Base Stat Total: %u",(unsigned)(p->hp+p->atk+p->def+p->spa+p->spd+p->spe)); dtext(8,154,UX_TEXT,b);
-  const DexAbilities *a=&dex_abilities[dex-1];
-  snprintf(b,sizeof b,"Ability: %s%s%s",ability_names[a->a0],a->a1?" / ":"",a->a1?ability_names[a->a1]:""); dtext(8,176,UX_TEXT,b);
-  if(a->hidden){snprintf(b,sizeof b,"Hidden: %s",ability_names[a->hidden]); dtext(8,194,UX_TEXT,b);}
-  foot("EXE/EXIT Back");
-  dupdate(); wait_back();
+  int page=0;
+  for(;;) {
+    head("UltraDex - National Dex");
+    snprintf(b,sizeof b,"#%03d %s   Gen %u",dex,p->name,p->gen); dtext(8,32,UX_TEXT,b);
+    snprintf(b,sizeof b,"Type: %s%s%s",type_name(pokeapi_type(p->t1)),p->t2?" / ":"",p->t2?type_name(pokeapi_type(p->t2)):""); dtext(8,56,UX_TEXT,b);
+    if(page==0) {
+      dtext(8,84,UX_TEXT,"Base Stats");
+      snprintf(b,sizeof b,"HP  %3u     ATK %3u     DEF %3u",p->hp,p->atk,p->def); dtext(8,108,UX_TEXT,b);
+      snprintf(b,sizeof b,"SPA %3u     SPD %3u     SPE %3u",p->spa,p->spd,p->spe); dtext(8,132,UX_TEXT,b);
+      snprintf(b,sizeof b,"Base Stat Total: %u",(unsigned)(p->hp+p->atk+p->def+p->spa+p->spd+p->spe)); dtext(8,154,UX_TEXT,b);
+      const DexAbilities *a=&dex_abilities[dex-1];
+      snprintf(b,sizeof b,"Ability: %s%s%s",ability_names[a->a0],a->a1?" / ":"",a->a1?ability_names[a->a1]:""); dtext(8,176,UX_TEXT,b);
+      if(a->hidden){snprintf(b,sizeof b,"Hidden: %s",ability_names[a->hidden]); dtext(8,194,UX_TEXT,b);}
+    } else if(page==1) {
+      dtext(8,86,UX_TEXT,"Evolution chain:");
+      if(dex>=390 && dex<=392) {
+        dtext(8,112,UX_TEXT,"Chimchar -> Monferno (Lv 14)");
+        dtext(8,139,UX_TEXT,"Monferno -> Infernape (Lv 36)");
+        dtext(8,176,UX_MUTED,"Sinnoh starter evolution family");
+      } else {
+        dtext(8,120,UX_MUTED,"Evolution data not yet available.");
+      }
+    } else {
+      dtext(8,88,UX_TEXT,"Level-up moves:");
+      if(dex==390) {
+        dtext(8,112,UX_TEXT,"Lv 1  Scratch");
+        dtext(8,133,UX_TEXT,"Lv 1  Leer");
+        dtext(8,154,UX_TEXT,"Lv 7  Ember");
+        dtext(8,175,UX_MUTED,"Sample only - Gen 4 learnset");
+      } else {
+        dtext(8,120,UX_MUTED,"Learnset data not yet available.");
+      }
+    }
+    foot("F1 Stats  F2 Evol  F3 Moves  EXIT");
+    dupdate();
+    key_event_t e=getkey();
+    if(e.key==KEY_F1)page=0;
+    else if(e.key==KEY_F2)page=1;
+    else if(e.key==KEY_F3)page=2;
+    else if(e.key==KEY_EXIT || e.key==KEY_EXE)return;
+  }
 }
 
 static void dex_number_search(void) {
