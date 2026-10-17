@@ -1324,7 +1324,21 @@ static void show_dex_entry(int dex) {
       if(dex>=390 && dex<=392) {
         dtext(8,112,UX_TEXT,"Chimchar -> Monferno (Lv 14)");
         dtext(8,139,UX_TEXT,"Monferno -> Infernape (Lv 36)");
-        dtext(8,176,UX_MUTED,"Sinnoh starter evolution family");
+      } else if(dex>=1 && dex<=3) {
+        dtext(8,112,UX_TEXT,"Bulbasaur -> Ivysaur (Lv 16)");
+        dtext(8,139,UX_TEXT,"Ivysaur -> Venusaur (Lv 32)");
+      } else if(dex>=4 && dex<=6) {
+        dtext(8,112,UX_TEXT,"Charmander -> Charmeleon (Lv 16)");
+        dtext(8,139,UX_TEXT,"Charmeleon -> Charizard (Lv 36)");
+      } else if(dex>=7 && dex<=9) {
+        dtext(8,112,UX_TEXT,"Squirtle -> Wartortle (Lv 16)");
+        dtext(8,139,UX_TEXT,"Wartortle -> Blastoise (Lv 36)");
+      } else if(dex>=387 && dex<=389) {
+        dtext(8,112,UX_TEXT,"Turtwig -> Grotle (Lv 18)");
+        dtext(8,139,UX_TEXT,"Grotle -> Torterra (Lv 32)");
+      } else if(dex>=393 && dex<=395) {
+        dtext(8,112,UX_TEXT,"Piplup -> Prinplup (Lv 16)");
+        dtext(8,139,UX_TEXT,"Prinplup -> Empoleon (Lv 36)");
       } else dtext(8,120,UX_MUTED,"Evolution data not yet available.");
     } else {
       snprintf(b,sizeof b,"Learnset: Gen %d  (LEFT/RIGHT)",selected_gen);
