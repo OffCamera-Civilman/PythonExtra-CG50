@@ -1,0 +1,19 @@
+name: Build NspireClock CX II
+on:
+  push:
+    branches: [nspire-clock-cxii-test]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build with Ndless SDK Docker toolchain
+        run: |
+          docker run --rm -v "$PWD/nspire-clock:/work" -w /work ndless/ndless-sdk sh -c 'make'
+      - name: Upload calculator executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: NspireClock-CXII-v0.1
+          path: nspire-clock/NspireClock_CXII_v0_1.tns
+          if-no-files-found: error
